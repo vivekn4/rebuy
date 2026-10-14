@@ -311,3 +311,29 @@ the new `.shop-*` DOM).
 **Not verifiable here:** real-device rendering at 390px (CSS reviewed against the
 ≤600px breakpoint; tap targets ≥44px in card actions), live eBay/Google modes
 (keys still pending), canvas pixel output.
+
+## §12 — Tool-powered polish pass (2026-10-14)
+
+**Icons:** every text-symbol icon replaced with inlined Lucide SVGs — `js/icons.js`
+(1.7KB, 6 icons: star, badge-check, arrow-up-right, arrow-left, circle-check,
+circle; the 454KB UMD is NOT shipped). ★/☆ → crisp SVG stars, ✓ → badge-check,
+→/← → arrow icons, ○/✓ status → circle icons. Sort labels now buyer-language
+("Price: low to high") per the card-patterns playbook.
+
+**Tokens:** `vendor/open-props.min.css` vendored (MIT); structural values now ride
+tokens — 18× `999px` pill radii → `var(--radius-round)`, radii/shadows →
+`--radius-3`/`--shadow-2/3` with `--shadow-color` set to Rebuy's terracotta so the
+warm tint survives. Palette values untouched.
+
+**Cards (micro):** skeleton shimmer loading states (no layout shift — same grid
+rhythm as results), subtle image zoom on card hover, `transition: all` replaced
+with explicit properties, chip touch targets enlarged (~40px).
+
+**A11y:** html-validate clean (fixed: duplicate nav landmark names, missing button
+types, 5 unassociated filter labels → `for`/`id`). Contrast: `--ink-faint`
+darkened #8a8378→#6E6759 (3.6:1→5.4:1) and deal-tag.over text → ink (2.25:1→6.7:1).
+Modal now traps Tab focus and returns focus to its trigger on close. Global
+`:focus-visible` clay ring. axe-core in-browser run still needs a real browser
+(hand to parent).
+
+**Tests:** unit 59/59 PASS, journeys 31/31 PASS, `node --check` clean.
