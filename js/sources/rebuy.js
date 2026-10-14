@@ -16,6 +16,7 @@
       listedAt: l.postedAt,
       seller: { name: (l.seller || {}).name || "Rebuy seller", rating: (l.seller || {}).rating, verified: !!(l.seller || {}).verified },
       newPrice: l.newPrice, year: l.year, category: l.category,
+      soldComps: l.soldComps || [],
       _native: l
     };
   }

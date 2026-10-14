@@ -148,7 +148,7 @@
   }
   function route() {
     var r = parseHash();
-    $all(".site-nav a").forEach(function (a) {
+    $all(".site-nav a, .mobile-tabs a").forEach(function (a) {
       var nav = a.getAttribute("data-nav");
       a.classList.toggle("active",
         (nav === "home" && (r.path === "" || r.path === "search")) || nav === r.path);

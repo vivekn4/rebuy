@@ -78,3 +78,13 @@ t("dealInfoX: absolute when newPrice, relative otherwise", () => {
   assert.equal(rel.basis, "relative");
   assert.equal(rel.score, 90);
 });
+
+t("card and detail scores agree when soldComps present (regression 2026-10-14)", () => {
+  // Card path: dealInfoX on the normalized item (must carry soldComps through).
+  const cardItem = { price: 320, newPrice: 1450, category: "computers", condition: "good", year: 2018, soldComps: [400, 420, 440] };
+  const cardInfo = D.dealInfoX(cardItem, { medianPrice: 500 }, 2026);
+  // Detail path: dealInfo with the same inputs.
+  const detailInfo = D.dealInfo(cardItem, 2026);
+  assert.equal(cardInfo.score, detailInfo.score, `card=${cardInfo.score} detail=${detailInfo.score}`);
+  assert.equal(cardInfo.tier.key, detailInfo.tier.key);
+});

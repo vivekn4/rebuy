@@ -61,6 +61,31 @@
 <!-- Toasts -->
 <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
+<!-- Mobile tab bar (≤960px): the desktop nav hides there, so this keeps
+     Search / Spend / Sell / Alerts / Settings reachable on phones. -->
+<nav class="mobile-tabs" aria-label="Primary">
+  <a href="#/" data-nav="home">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <span>Search</span>
+  </a>
+  <a href="#/spend" data-nav="spend">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M4 16V10M10 16V4M16 16v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <span>Spend</span>
+  </a>
+  <a href="#/sell" data-nav="sell">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 3h7l9 9-7 7-9-9V3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>
+    <span>Sell</span>
+  </a>
+  <a href="#/alerts" data-nav="alerts">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M10 3a5 5 0 0 1 5 5v3l1.5 2.5h-13L5 11V8a5 5 0 0 1 5-5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 16.5a1.8 1.8 0 0 0 3 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <span>Alerts</span>
+  </a>
+  <a href="#/settings" data-nav="settings">
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 2.5v2.6M10 14.9v2.6M2.5 10h2.6M14.9 10h2.6M4.7 4.7l1.8 1.8M13.5 13.5l1.8 1.8M15.3 4.7l-1.8 1.8M6.5 13.5l-1.8 1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <span>Settings</span>
+  </a>
+</nav>
+
 <footer class="site-footer">
   <p class="footer-tag">Give every thing a second story.</p>
   <p class="footer-note">Rebuy takes <strong>zero commission</strong> — you pay the seller in person. Be kind, meet in public, trust your gut.</p>
