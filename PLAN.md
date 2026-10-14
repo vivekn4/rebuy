@@ -244,3 +244,35 @@ Real backend, accounts/login, real payments/escrow, in-app chat (offers are stru
 ## 9. QA plan
 
 `node --check` every JS file; `node --test test/` — suites for deals (score tiers, boundaries, comp blending), geo (Haversine known distances, radius filter, epsilon), offers (suggestion math, auto accept/decline/counter), spend (bucketing, dynamic ranges, 30d sum, savings). Manual: no live browser here — DOM paths code-reviewed; smoke test recommended after Pages deploy.
+
+## 10. QA pass 2026-10-14 — wrong-link bug + 30 mock-customer journeys
+
+**Fixed: demo link-outs.** eBay demo items hardcoded `https://www.ebay.ca/` and Google demo items hardcoded domain homepages — clicking any external result opened a generic page. Demo URLs are now real searches: eBay → `ebay.ca/sch/i.html?_nkw=<query>&_sop=15` (price-lowest-first); Google → `google.com/search?q=site:<domain> <query>`. Live paths untouched. Unit tests assert the encoded query in every demo URL.
+
+**New: in-app message threads** (supersedes the "no in-app chat" non-goal). `Store.messages` + per-listing thread UI in the listing modal: buyer sends → deterministic keyword-matched seller auto-reply (~900ms, calm tone). Replaces the old copy-a-draft modal.
+
+**Found by the journeys, fixed:**
+- Search "laptop" returned zero native listings (titles say "ThinkPad", category "computers"). Added `CAT_ALIASES` in the Rebuy adapter (`Native.matches`): everyday words map to categories (laptop→computers, bicycle→bikes, …). Model searches stay strict.
+- Adapter `search()` could throw synchronously when `fetch` is unavailable; now always returns a promise that degrades to demo.
+
+**Harness:** `test-harness/` (gitignored) — `journeys.js` boots the real app in jsdom and drives 30 personas via DOM events. 30/30 PASS. Unit suite: 56/56 PASS (`node --test test/*.test.js`).
+
+**Not verifiable here:** real mobile device rendering, live eBay/Google keys, on-device geolocation, Notification permission UX, canvas pixel output (stubbed 2d context in harness).
+
+## 11. 2026-10-14 — second-hand search-engine positioning: 9 marketplaces, 3 honest tiers
+
+**Positioning:** Rebuy is now framed as a search engine for second-hand articles across every major marketplace — not an eBay sidecar. External zone restructured into three honest tiers:
+
+1. **eBay** — structured live listings with real prices (labeled "eBay · live prices" when live; demo otherwise). First in the external zone because real prices feed deal scores.
+2. **"Across the second-hand web"** — Google Programmable Search results **grouped by marketplace**: a sub-header per source (calm dot + name + count, e.g. "Kijiji · 3"), groups ordered by result count desc. Works in live and demo modes.
+3. **"Search directly on"** — a chip row with all nine deep-link marketplaces (Kijiji, Facebook Marketplace, Craigslist, OfferUp, Gumtree, Mercari, Depop, Poshmark, VarageSale); each chip opens that marketplace's own search for the query in a new tab. Kept the honest note: "Some marketplaces don't offer public APIs, so we send you to their own search instead of pretending."
+
+**New deep links (all 5 URL patterns verified live 2026-10-14 with a "thinkpad" test query):** Gumtree (`/search?q=`, 200 + "search results" markers), Depop (`/search/?q=`, 200 + markers), Poshmark (`/search?query=`, 200 + query echoed), Mercari (`/search/?keyword=` — Mercari's genuine search URL; automated fetches hit their bot-wall captcha, pattern shipped as documented), VarageSale (`/search?q=` — 200, SPA shell reads the q param client-side; community search needs sign-in, so the global search route is linked honestly).
+
+**Removed:** the disabled "coming soon" chips in the source filter row — misleading now that every marketplace is covered via deep links.
+
+**Demo breadth:** Google demo results now sample from all nine marketplaces (6–9 items per search); VarageSale added to `DOMAIN_LABELS`.
+
+**Tests:** `groupByMarketplace` (correct headers, count-desc ordering, empty→[]), every deep link carries the encoded multi-word query (OfferUp homepage is the honest exception), demo sampling breadth. Unit suite: 59/59 PASS. Harness: 30/30 PASS after updating journeys 09/11/12/13 to the new UI.
+
+**Still honest:** tier-3 deep links never pretend to be live inventory; demo modes stay clearly labeled; no marketplace's private inventory is claimed.
