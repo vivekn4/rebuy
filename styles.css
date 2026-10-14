@@ -3,6 +3,12 @@
    Restraint is the aesthetic: generous whitespace, soft shadows, one
    orchestrated motion moment per view, nothing that shouts. */
 
+/* The `hidden` attribute must always win: several components (modal
+   backdrop, compare tray) set `display` in their own rules, which would
+   otherwise override the UA stylesheet and leave invisible overlays
+   blocking the page. Bug found 2026-10-14. */
+[hidden] { display: none !important; }
+
 :root {
   --cream: #FFFBEB;
   --cream-deep: #FAF3E3;
