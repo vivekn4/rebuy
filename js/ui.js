@@ -29,7 +29,6 @@
   var view = document.getElementById("view");
   var CATS = ["computers", "phones", "bikes", "furniture", "cameras", "consoles", "appliances", "instruments", "other"];
   var CONDS = [["like-new", "Like new"], ["good", "Good"], ["fair", "Fair"], ["parts", "For parts"]];
-  var COMING_SOON = [["kijiji", "Kijiji"], ["facebook", "Facebook"], ["craigslist", "Craigslist"], ["offerup", "OfferUp"]];
 
   // ---------- tiny helpers ----------
   function esc(s) {
@@ -277,7 +276,7 @@
   function renderSearch(q) {
     var f = filterParams(q);
     S.lastSearch = { query: f.q, filters: f };
-    var chips = [["all", "All"], ["rebuy", "On Rebuy"], ["ebay", "eBay"], ["web", "Web results"]];
+    var chips = [["all", "All"], ["rebuy", "On Rebuy"], ["ebay", "eBay"], ["web", "Second-hand web"]];
     view.innerHTML =
       '<section class="results-head"><h1 class="serif">Results for “' + esc(f.q || "everything nearby") + "”</h1>" +
       '<p class="results-meta" id="resultsMeta">Gathering listings…</p></section>' +
@@ -296,9 +295,6 @@
       '<div class="source-chips" role="group" aria-label="Source filter">' +
       chips.map(function (c) {
         return '<button class="chip" data-src="' + c[0] + '" aria-pressed="' + (f.src === c[0]) + '">' + c[1] + "</button>";
-      }).join("") +
-      COMING_SOON.map(function (c) {
-        return '<button class="chip" disabled title="No public API yet">' + c[1] + "</button>";
       }).join("") + "</div>" +
       '<div class="results-grid"><div id="mainZone"></div><aside class="side-panel" id="sidePanel" aria-label="Also listed on"></aside></div>';
 
@@ -395,6 +391,35 @@
     return '<div class="mode-note demo">Demo results — <a href="#/settings">' + esc(settingsHint) + "</a> for live listings.</div>";
   }
 
+  // Calm dot colour per marketplace (stable across renders).
+  function mktHue(label) {
+    var h = 0, s = String(label || "web");
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+    return h;
+  }
+
+  // Grouped "Across the second-hand web" markup: one sub-header per marketplace
+  // (dot + name + count), groups ordered by count. Empty → "" (zone hides).
+  function webGroupsHTML(items) {
+    var groups = GSE.groupByMarketplace(items);
+    if (!groups.length) return "";
+    return groups.map(function (g) {
+      return '<div class="market-group">' +
+        '<div class="mkt-head"><span class="mkt-dot" style="background:hsl(' + mktHue(g.label) + ',42%,52%)"></span>' +
+        '<span class="mkt-name">' + esc(g.label) + '</span><span class="mkt-count">' + g.items.length + "</span></div>" +
+        g.items.map(extRowHTML).join("") + "</div>";
+    }).join("");
+  }
+
+  // Zone 3: chip row of every deep-link marketplace.
+  function deepLinkChipsHTML(q) {
+    return '<div class="search-chips">' +
+      DL.links(q).map(function (l) {
+        return '<a class="search-chip" href="' + esc(l.url) + '" target="_blank" rel="noopener">' +
+          esc(l.label) + '<span class="arrow">→</span></a>';
+      }).join("") + "</div>";
+  }
+
   function renderSidePanel(f, R) {
     var sp = $("#sidePanel");
     var q = f.q;
@@ -405,28 +430,23 @@
     if (f.src === "rebuy") { sp.innerHTML = html + '<p class="hint">Showing only Rebuy listings. Switch the source filter to compare elsewhere.</p>'; return; }
 
     if (showEbay) {
-      html += '<div class="tier-label">eBay</div>';
+      html += '<div class="tier-label">' + (R.ebay.mode === "live" && !R.ebay.quota ? "eBay · live prices" : "eBay") + "</div>";
       html += modeNote(R.ebay, "add your free eBay key in Settings");
-      if (R.ebay.notice && !R.gse.quota && R.ebay.mode === "demo" && R.ebay.notice)
+      if (R.ebay.notice && R.ebay.mode === "demo")
         html += '<div class="mode-note demo">' + esc(R.ebay.notice) + "</div>";
       html += R.ebayItems.length
         ? R.ebayItems.map(extRowHTML).join("")
         : '<p class="hint">No eBay matches for this search.</p>';
     }
     if (showWeb) {
-      html += '<div class="tier-label">Across the web</div>';
+      html += '<div class="tier-label">Across the second-hand web</div>';
       html += modeNote(R.gse, "add your free Google key in Settings");
       if (!R.gse.quota) {
-        html += R.gseItems.length
-          ? R.gseItems.map(extRowHTML).join("")
-          : '<p class="hint">No web matches for this search.</p>';
+        var groups = webGroupsHTML(R.gseItems);
+        html += groups || '<p class="hint">No web matches for this search.</p>';
       }
-      html += '<div class="tier-label">Search the rest yourself</div>' +
-        '<ul class="deep-links">' +
-        DL.links(q).map(function (l) {
-          return '<li><a href="' + esc(l.url) + '" target="_blank" rel="noopener"><span>' + esc(l.label) +
-            ' <span class="hint">· ' + esc(l.note) + "</span></span><span class=\"arrow\">→</span></a></li>";
-        }).join("") + "</ul>" +
+      html += '<div class="tier-label">Search directly on</div>' +
+        deepLinkChipsHTML(q) +
         '<p class="honest-note">' + esc(DL.HONEST_NOTE) + "</p>";
     }
     if (f.src === "ebay" || f.src === "web") {
@@ -434,15 +454,16 @@
       var mz = $("#mainZone");
       var items = f.src === "ebay" ? R.ebayItems : R.gseItems;
       var r = f.src === "ebay" ? R.ebay : R.gse;
-      mz.innerHTML = '<div class="zone-title"><h2 class="serif">' + (f.src === "ebay" ? "eBay" : "Web results") +
+      var isLiveEbay = f.src === "ebay" && r.mode === "live" && !r.quota;
+      mz.innerHTML = '<div class="zone-title"><h2 class="serif">' +
+        (f.src === "ebay" ? (isLiveEbay ? "eBay · live prices" : "eBay") : "Across the second-hand web") +
         '</h2><span class="count">' + items.length + "</span></div>" +
         modeNote(r, "add your free key in Settings") +
-        (items.length ? items.map(extRowHTML).join("") : '<div class="empty"><p class="serif">No matches here.</p></div>') +
-        (f.src === "web" ? '<ul class="deep-links" style="margin-top:1rem">' +
-          DL.links(q).map(function (l) {
-            return '<li><a href="' + esc(l.url) + '" target="_blank" rel="noopener"><span>' + esc(l.label) +
-              "</span><span class=\"arrow\">→</span></a></li>";
-          }).join("") + "</ul><p class=\"honest-note\">" + esc(DL.HONEST_NOTE) + "</p>" : "");
+        (items.length
+          ? (f.src === "web" ? webGroupsHTML(items) : items.map(extRowHTML).join(""))
+          : '<div class="empty"><p class="serif">No matches here.</p></div>') +
+        (f.src === "web" ? '<div class="tier-label">Search directly on</div>' +
+          deepLinkChipsHTML(q) + '<p class="honest-note">' + esc(DL.HONEST_NOTE) + "</p>" : "");
       sp.innerHTML = "<h2 class=\"serif\">Also listed on</h2><p class=\"hint\">Focused view — switch the source filter back to “All” to compare everywhere at once.</p>";
       wireCompareBoxes(mz);
       return;
