@@ -9,7 +9,8 @@
       SP = root.RebuySpend, Store = root.RebuyStore, Seed = root.RebuySeed,
       Sound = root.RebuySound, Charts = root.RebuyCharts,
       Src = root.RebuySources, Ebay = root.RebuyEbay, GSE = root.RebuyGSE,
-      DL = root.RebuyDeepLinks, Native = root.RebuyNative;
+      DL = root.RebuyDeepLinks, Native = root.RebuyNative,
+      IC = root.RebuyIcons;
 
   // ---------- state ----------
   var S = {
@@ -61,6 +62,7 @@
   }
 
   // ---------- toast + modal ----------
+  var lastFocus = null;
   function toast(msg, kind) {
     var region = document.getElementById("toastRegion");
     var t = document.createElement("div");
@@ -72,18 +74,34 @@
   }
   function openModal(html) {
     var bd = document.getElementById("modalBackdrop"), box = document.getElementById("modalBox");
+    lastFocus = document.activeElement;
     box.innerHTML = html;
     bd.hidden = false;
     var first = box.querySelector("input, textarea, select, button");
     if (first) setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
     bd.onclick = function (e) { if (e.target === bd) closeModal(); };
-    document.addEventListener("keydown", escClose);
+    document.addEventListener("keydown", modalKey);
     return box;
   }
-  function escClose(e) { if (e.key === "Escape") closeModal(); }
+  function modalKey(e) {
+    if (e.key === "Escape") { closeModal(); return; }
+    if (e.key !== "Tab") return;
+    // Keep tab focus cycling inside the dialog while it's open.
+    var box = document.getElementById("modalBox");
+    var f = $all("a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex='-1'])", box)
+      .filter(function (el) { return el.offsetParent !== null; });
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
   function closeModal() {
     document.getElementById("modalBackdrop").hidden = true;
-    document.removeEventListener("keydown", escClose);
+    document.removeEventListener("keydown", modalKey);
+    if (lastFocus && document.body.contains(lastFocus)) {
+      try { lastFocus.focus(); } catch (e) {}
+    }
+    lastFocus = null;
   }
 
   // ---------- deal badge (hang-tag motif) ----------
@@ -226,13 +244,15 @@
   }
 
   // ---------- shopping cards (Google-Shopping pattern, calm theme) ----------
-  // Stars from a 0–5 rating. Only ever called with real data — never fake stars.
+  // Stars from a 0–5 rating. Lucide star SVGs (filled vs outline) — crisp at
+  // every size, never emoji. Only ever called with real data — never fake stars.
   function starsHTML(rating5, sub) {
     var r = Math.max(0, Math.min(5, +rating5 || 0));
     var full = Math.round(r), s = "", i;
-    for (i = 0; i < 5; i++) s += i < full ? "★" : "☆";
+    for (i = 0; i < 5; i++)
+      s += '<span class="st' + (i < full ? " on" : "") + '" aria-hidden="true">' + IC.icon("star", 15, i < full) + "</span>";
     return '<div class="shop-stars" role="img" aria-label="' + r.toFixed(1) + ' out of 5 stars">' +
-      '<span aria-hidden="true">' + s + "</span>" +
+      '<span class="stars-row">' + s + "</span>" +
       (sub ? '<span class="pct">' + esc(sub) + "</span>" : "") + "</div>";
   }
   // eBay feedback percentage (0–100) → stars.
@@ -266,6 +286,16 @@
     return '<div class="shop-price-row"><data class="shop-price" value="' + it.price + '">' + money(it.price) +
       "</data>" + condPillHTML(it) + "</div>";
   }
+  // Skeleton shimmer cards while results gather — same grid rhythm as real cards.
+  function skelCards(n) {
+    var s = "";
+    for (var i = 0; i < (n || 4); i++)
+      s += '<div class="shop-card" aria-hidden="true"><div class="skel" style="aspect-ratio:4/3"></div>' +
+        '<div class="shop-body"><div class="skel" style="height:.8em;width:38%"></div>' +
+        '<div class="skel" style="height:1em"></div><div class="skel" style="height:1em;width:75%"></div>' +
+        '<div class="skel" style="height:1.9em;width:52%"></div></div></div>';
+    return s;
+  }
   function compareCheckHTML(it) {
     var checked = S.compareIds.indexOf(it.id) >= 0;
     return '<label class="compare-check' + (checked ? " on" : "") + '"><input type="checkbox" data-cmp="' +
@@ -287,7 +317,7 @@
       (it._tier ? '<div class="shop-badges">' + dealBadge(it) + "</div>" : "") +
       (it.distanceKm != null ? '<div class="shop-dist">' + esc(distLabel(it.distanceKm)) + "</div>" : "") +
       (it.seller && it.seller.name ? '<div class="shop-seller">Seller: ' + esc(it.seller.name) +
-        (it.seller.verified ? ' <span class="verified">✓ verified</span>' : "") + "</div>" : "") +
+        (it.seller.verified ? ' <span class="verified">' + IC.icon("badge-check", 14) + ' verified</span>' : "") + "</div>" : "") +
       '<div class="shop-actions"><a class="btn btn-primary btn-sm" href="' + detailUrl + '">View</a>' +
       compareCheckHTML(it) + "</div></div></article>";
   }
@@ -329,20 +359,20 @@
       '<section class="results-head"><h1 class="serif">Results for “' + esc(f.q || "everything nearby") + "”</h1>" +
       '<p class="results-meta" id="resultsMeta">Gathering listings…</p></section>' +
       '<div class="filter-bar" id="filterBar">' +
-      '<div class="f"><label>Category</label><select id="fCat"><option value="any">All</option>' +
+      '<div class="f"><label for="fCat">Category</label><select id="fCat"><option value="any">All</option>' +
       CATS.map(function (c) { return '<option value="' + c + '"' + (f.cat === c ? " selected" : "") + ">" + esc(c) + "</option>"; }).join("") + "</select></div>" +
-      '<div class="f f-narrow"><label>Min $</label><input type="number" id="fMin" min="0" value="' + (f.min == null ? "" : f.min) + '" placeholder="0"></div>' +
-      '<div class="f f-narrow"><label>Max $</label><input type="number" id="fMax" min="0" value="' + (f.max == null ? "" : f.max) + '" placeholder="Any"></div>' +
-      '<div class="f"><label>Condition</label><select id="fCond"><option value="any">Any</option>' +
+      '<div class="f f-narrow"><label for="fMin">Min $</label><input type="number" id="fMin" min="0" value="' + (f.min == null ? "" : f.min) + '" placeholder="0"></div>' +
+      '<div class="f f-narrow"><label for="fMax">Max $</label><input type="number" id="fMax" min="0" value="' + (f.max == null ? "" : f.max) + '" placeholder="Any"></div>' +
+      '<div class="f"><label for="fCond">Condition</label><select id="fCond"><option value="any">Any</option>' +
       CONDS.map(function (c) { return '<option value="' + c[0] + '"' + (f.cond === c[0] ? " selected" : "") + ">" + c[1] + "</option>"; }).join("") + "</select></div>" +
-      '<div class="f"><label>Sort</label><select id="fSort">' +
-      [["deal", "Best deal"], ["price-asc", "Price ↑"], ["price-desc", "Price ↓"], ["newest", "Newest"], ["distance", "Nearest"]].map(function (o) {
+      '<div class="f"><label for="fSort">Sort</label><select id="fSort">' +
+      [["deal", "Best deal"], ["price-asc", "Price: low to high"], ["price-desc", "Price: high to low"], ["newest", "Newest"], ["distance", "Nearest"]].map(function (o) {
         return '<option value="' + o[0] + '"' + (f.sort === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
       }).join("") + "</select></div>" +
       "</div>" +
       '<div class="source-chips" role="group" aria-label="Source filter">' +
       chips.map(function (c) {
-        return '<button class="chip" data-src="' + c[0] + '" aria-pressed="' + (f.src === c[0]) + '">' + c[1] + "</button>";
+        return '<button type="button" class="chip" data-src="' + c[0] + '" aria-pressed="' + (f.src === c[0]) + '">' + c[1] + "</button>";
       }).join("") + "</div>" +
       '<div class="results-grid"><div id="mainZone"></div><aside class="side-panel" id="sidePanel" aria-label="Also listed on"></aside></div>';
 
@@ -370,9 +400,9 @@
       b.addEventListener("click", function () { f.src = b.getAttribute("data-src"); Sound.click(); pushHash(); });
     });
 
-    // loading skeletons
-    $("#mainZone").innerHTML = '<div class="zone-title"><h2 class="serif">On Rebuy</h2></div><div class="cards"><div class="empty">Looking nearby…</div></div>';
-    $("#sidePanel").innerHTML = "<h2 class=\"serif\">Also listed on</h2><div class=\"empty\">Checking elsewhere…</div>";
+    // loading skeletons (same grid as results — no layout shift when they land)
+    $("#mainZone").innerHTML = '<div class="zone-title"><h2 class="serif">On Rebuy</h2></div><div class="cards" aria-label="Loading listings">' + skelCards(4) + "</div>";
+    $("#sidePanel").innerHTML = '<h2 class="serif">Also listed on</h2><div class="cards" aria-label="Loading external listings">' + skelCards(2) + "</div>";
 
     var af = filtersForAdapters(f);
     var nativeAdapter = Native.makeAdapter(Store, G);
@@ -464,7 +494,7 @@
     return '<div class="search-chips">' +
       DL.links(q).map(function (l) {
         return '<a class="search-chip" href="' + esc(l.url) + '" target="_blank" rel="noopener">' +
-          esc(l.label) + '<span class="arrow">→</span></a>';
+          esc(l.label) + '<span class="arrow" aria-hidden="true">' + IC.icon("arrow-up-right", 14) + "</span></a>";
       }).join("") + "</div>";
   }
 
@@ -539,7 +569,7 @@
     var checked = S.compareIds.indexOf(n.id) >= 0;
 
     view.innerHTML =
-      '<p><a href="javascript:history.back()">← Back to results</a></p>' +
+      '<p><a class="back-link" href="javascript:history.back()">' + IC.icon("arrow-left", 15) + ' Back to results</a></p>' +
       '<div class="detail-grid"><div>' +
       '<img class="detail-photo" id="detailPhoto" src="' + esc(photos[0]) + '" alt="' + esc(l.title) + '">' +
       (photos.length > 1 ? '<div class="photo-preview">' + photos.map(function (p, i) {
@@ -561,7 +591,7 @@
       '<p class="hint">Fair market value ≈ ' + money(n._fair) + " · " + esc(distLabel(n.distanceKm)) + "</p>" +
       '<div class="seller-card"><h3 class="serif">Seller</h3><div class="seller-row"><span class="avatar">' +
       esc(l.seller.name.charAt(0)) + '</span><div><strong>' + esc(l.seller.name) + "</strong><br>" +
-      (l.seller.verified ? '<span class="verified">✓ Verified seller</span><br>' : "") +
+      (l.seller.verified ? '<span class="verified">' + IC.icon("badge-check", 14) + ' Verified seller</span><br>' : "") +
       (l.seller.rating != null ? starsHTML(l.seller.rating, (+l.seller.rating).toFixed(1) + " · " + l.seller.trades + " trades") : '<span class="hint">' + l.seller.trades + " trades</span>") + "</div></div></div>" +
       '<div class="panel"><div class="tier-label">Haggle Engine</div><h3 class="serif">What should I offer?</h3>' +
       "<p>Data-backed suggestion: <strong>" + money(suggest) + "</strong></p>" +
@@ -725,7 +755,7 @@
         label: "Get it", fn: function (it) {
           return it.source === "rebuy"
             ? '<a class="btn btn-primary btn-sm" href="#/listing/' + esc(it.id) + '">View & offer</a>'
-            : '<a class="btn btn-ghost btn-sm" href="' + esc(it.url) + '" target="_blank" rel="noopener">Open listing →</a>';
+            : '<a class="btn btn-ghost btn-sm" href="' + esc(it.url) + '" target="_blank" rel="noopener">Open listing ' + IC.icon("arrow-up-right", 14) + "</a>";
         }
       }
     ];
@@ -902,7 +932,7 @@
       '<p class="hint">Logged purchases only.</p></div></div>' +
       '<div class="panel"><h3 class="serif">Monthly spend</h3>' +
       '<div class="range-pills" id="rangePills">' + ranges.map(function (r) {
-        return '<button class="chip" data-range="' + r + '" aria-pressed="' + (r === range) + '">' + r + "</button>";
+        return '<button type="button" class="chip" data-range="' + r + '" aria-pressed="' + (r === range) + '">' + r + "</button>";
       }).join("") + "</div>" +
       '<canvas class="chart" id="spendChart" height="220" aria-label="Monthly spend chart"></canvas></div>' +
       '<div class="panel"><h3 class="serif">By category</h3><canvas class="chart" id="catChart" aria-label="Spend by category"></canvas></div>' +
@@ -1050,7 +1080,7 @@
       '<option value="EBAY_US"' + ((ek && ek.marketplace) === "EBAY_US" ? " selected" : "") + '>United States (EBAY_US)</option></select></label>' +
       '<button class="btn btn-primary btn-sm" id="ebaySave">Save eBay key</button> ' +
       '<button class="btn btn-ghost btn-sm" id="ebayClear">Remove</button>' +
-      '<p class="status-line ' + (ebayOn ? "ok" : "off") + '" id="ebayStatus">' + (ebayOn ? "✓ Live eBay key saved — searches use real listings." : "○ Demo mode — add your free key for live eBay results.") + "</p></div>" +
+      '<p class="status-line ' + (ebayOn ? "ok" : "off") + '" id="ebayStatus">' + IC.icon(ebayOn ? "circle-check" : "circle", 14) + " " + (ebayOn ? "Live eBay key saved — searches use real listings." : "Demo mode — add your free key for live eBay results.") + "</p></div>" +
 
       '<div class="panel key-card"><h3 class="serif">Google Search API key + Engine ID</h3>' +
       '<p class="hint">Free: Google Cloud Console → enable the Custom Search API (100 queries/day) for the key, then create a Programmable Search Engine at <strong>programmablesearchengine.google.com</strong> restricted to marketplace domains (kijiji.ca, craigslist.org, facebook.com/marketplace…). Unlocks <strong>cross-marketplace web results</strong>.</p>' +
@@ -1058,7 +1088,7 @@
       '<label class="field"><span>Search engine ID</span><input type="text" id="gseCx" value="' + esc((gk && gk.engineId) || "") + '" autocomplete="off"></label></div>' +
       '<button class="btn btn-primary btn-sm" id="gseSave">Save Google key</button> ' +
       '<button class="btn btn-ghost btn-sm" id="gseClear">Remove</button>' +
-      '<p class="status-line ' + (gseOn ? "ok" : "off") + '">' + (gseOn ? "✓ Live Google key saved — web results are real." : "○ Demo mode — add your free key for live web results.") + "</p></div>" +
+      '<p class="status-line ' + (gseOn ? "ok" : "off") + '">' + IC.icon(gseOn ? "circle-check" : "circle", 14) + " " + (gseOn ? "Live Google key saved — web results are real." : "Demo mode — add your free key for live web results.") + "</p></div>" +
 
       '<div class="panel key-card"><h3 class="serif">Location</h3>' +
       '<p class="hint">Currently searching within 25 km of <strong>' + esc(S.center.label) + '</strong> (' + S.center.source + ").</p>" +
