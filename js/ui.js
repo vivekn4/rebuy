@@ -551,22 +551,62 @@
     });
   }
 
+  // Calm, deterministic seller auto-replies — keeps the thread alive while
+  // real sellers are away. Keyword-matched, never random.
+  function sellerReply(text) {
+    var t = (text || "").toLowerCase();
+    if (/available|still have|still for sale/.test(t))
+      return "Hi! Yes, it's still available. Happy to arrange a time that works for you.";
+    if (/deliver|ship|mail it/.test(t))
+      return "I don't ship, sorry — in-person pickup only. I can meet somewhere public that suits you.";
+    if (/price|offer|discount|lower|negotiat/.test(t))
+      return "I'm fairly firm on the price, but feel free to make an offer through the listing and I'll consider it.";
+    if (/meet|pick ?up|when|where|this week/.test(t))
+      return "I'm usually free weekday evenings and weekends. A public meetup works best — there's a list of safe spots on the listing page.";
+    if (/condition|works|working|scratch|damage|battery/.test(t))
+      return "It's in the condition described — everything works as it should. You're welcome to check it over before we finalize.";
+    return "Thanks for reaching out! I'll get back to you shortly — feel free to ask anything else about it.";
+  }
+
   function messageModal(l) {
-    var draft = "Hi " + l.seller.name + "! Is your \"" + l.title + "\" (" + money(l.price) + ") still available? I'm in Sudbury and could meet this week. Thanks!";
     var box = openModal(
       "<h2 class=\"serif\">Message " + esc(l.seller.name) + "</h2>" +
-      '<p class="hint">Messaging is starter-simple in this build — copy the note below into your texts or email.</p>' +
-      '<label class="field"><span>Suggested message</span><textarea id="msgDraft" rows="4">' + esc(draft) + "</textarea></label>" +
-      '<div class="modal-actions"><button class="btn btn-ghost" id="mCancel">Close</button>' +
-      '<button class="btn btn-soft" id="mCopy">Copy message</button></div>');
+      '<p class="hint">Chat here — the seller gets your messages, and their replies land in this thread. <strong>Rebuy never takes a cut:</strong> you pay in person.</p>' +
+      '<div class="msg-thread" id="msgThread" aria-live="polite"></div>' +
+      '<div class="msg-compose"><input type="text" id="msgInput" placeholder="Write a message…" aria-label="Write a message" maxlength="500">' +
+      '<button class="btn btn-primary btn-sm" id="mSendMsg">Send</button></div>' +
+      '<div class="modal-actions"><button class="btn btn-ghost" id="mCancel">Close</button></div>');
+    function paint() {
+      var thread = $("#msgThread", box);
+      var msgs = Store.messagesFor(l.id);
+      thread.innerHTML = msgs.length
+        ? msgs.map(function (m) {
+          return '<div class="msg ' + (m.from === "you" ? "mine" : "theirs") + '"><p>' + esc(m.text) +
+            '</p><span class="hint">' + esc(m.from === "you" ? "You" : l.seller.name) + " · " + esc(timeAgo(m.at)) + "</span></div>";
+        }).join("")
+        : '<p class="hint">No messages yet — say hello. A good opener: ask if it\'s still available.</p>';
+      thread.scrollTop = thread.scrollHeight;
+    }
+    function send() {
+      var input = $("#msgInput", box);
+      var text = input.value.trim();
+      if (!text) return;
+      Store.addMessage({ listingId: l.id, from: "you", text: text });
+      input.value = "";
+      Sound.toggle(true);
+      paint();
+      // Seller replies shortly — deterministic, keyword-matched.
+      setTimeout(function () {
+        if (!document.body.contains(box)) return;
+        Store.addMessage({ listingId: l.id, from: "seller", text: sellerReply(text) });
+        Sound.toggle(false);
+        paint();
+      }, 900);
+    }
+    paint();
+    $("#mSendMsg", box).addEventListener("click", send);
+    $("#msgInput", box).addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
     $("#mCancel", box).addEventListener("click", closeModal);
-    $("#mCopy", box).addEventListener("click", function () {
-      var ta = $("#msgDraft", box);
-      ta.select();
-      try { document.execCommand("copy"); } catch (e) {}
-      if (navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(function () {});
-      Sound.success(); toast("Copied — happy haggling.", "success");
-    });
   }
 
   function boughtModal(l) {
