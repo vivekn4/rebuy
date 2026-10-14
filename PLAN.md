@@ -276,3 +276,38 @@ Real backend, accounts/login, real payments/escrow, in-app chat (offers are stru
 **Tests:** `groupByMarketplace` (correct headers, count-desc ordering, empty→[]), every deep link carries the encoded multi-word query (OfferUp homepage is the honest exception), demo sampling breadth. Unit suite: 59/59 PASS. Harness: 30/30 PASS after updating journeys 09/11/12/13 to the new UI.
 
 **Still honest:** tier-3 deep links never pretend to be live inventory; demo modes stay clearly labeled; no marketplace's private inventory is claimed.
+
+## 12. 2026-10-14 — shopping-card grid redesign (Google-Shopping pattern, calm theme)
+
+**User direction:** a hand-drawn wireframe (saved as `docs/reference-shopping-layout.png`) showing search bar → main product area + right sidebar of sellers from every marketplace at different prices, plus the Google Shopping card pattern: image, retailer row, title, stars, BIG price.
+
+**What changed:** every listing card in the app is now a vertical shopping card —
+image (4:3, contain, calm placeholder letter behind; broken photos remove themselves)
+→ marketplace row (calm dot + name: "On Rebuy", "Kijiji", "eBay"…) → title (2-line clamp)
+→ star rating → BIG bold ink price + condition pill → Deal Score badge → distance line.
+Grids: `repeat(auto-fill, minmax(230px, 1fr))`, 2 columns at phone widths. The old
+horizontal `.card` and `.ext-row` mini-rows are gone; external results (eBay tier,
+marketplace groups, focused views) all render as cards now. The two-zone layout
+(main results + sticky "Also listed on" sidebar) is unchanged — it already matched
+the wireframe.
+
+**Ratings (never faked):** eBay `seller.feedbackPercentage` → stars + "98% positive";
+native seller rating (0–5) → stars; web results with no rating data omit the row.
+Stars are `role="img"` with an "X out of 5 stars" label; prices use semantic `<data>`.
+
+**Honest labels kept:** demo cards carry a small "Demo" pill (the reference's
+"Annonce" position); live cards get no pill. Price stays dark ink, never red.
+
+**Detail view** carries the same DNA: marketplace row above the title, big ink price,
+star row in the seller card. Compare tray/table, haggle modal, messaging, sell form,
+Spend, Settings functionally untouched.
+
+**Tests:** new journey 31 ("shopping-card anatomy") asserts marketplace row, accessible
+stars, semantic price, condition pill, distance line, image alt text, demo pill,
+outbound external links, eBay feedback stars, and detail-view DNA. Unit suite:
+59/59 PASS. Harness: 31/31 PASS (journeys 01/02/04–07/10/23/28 selectors updated to
+the new `.shop-*` DOM).
+
+**Not verifiable here:** real-device rendering at 390px (CSS reviewed against the
+≤600px breakpoint; tap targets ≥44px in card actions), live eBay/Google modes
+(keys still pending), canvas pixel output.
