@@ -41,6 +41,7 @@
     [/mercari\.com/i, "Mercari"],
     [/depop\.com/i, "Depop"],
     [/poshmark\.com/i, "Poshmark"],
+    [/varagesale\.com/i, "VarageSale"],
     [/ebay\./i, "eBay"]
   ];
   function sourceLabelFromUrl(url) {
@@ -82,10 +83,13 @@
   }
 
   // --- Demo mode: seeded mock snippets ---------------------------------------------
+  // Samples across all nine deep-link marketplaces, clearly labeled as demo.
   var DEMO_DOMAINS = [
     ["kijiji.ca", "Kijiji"], ["sudbury.craigslist.org", "Craigslist"],
     ["facebook.com/marketplace", "Facebook"], ["offerup.com", "OfferUp"],
-    ["gumtree.com", "Gumtree"]
+    ["gumtree.com", "Gumtree"], ["mercari.com", "Mercari"],
+    ["depop.com", "Depop"], ["poshmark.com", "Poshmark"],
+    ["varagesale.com", "VarageSale"]
   ];
   function demoResults(query) {
     var seed = hashStr("rebuy-gse:" + (query || "").toLowerCase().trim());
@@ -98,7 +102,7 @@
       };
     })(seed);
     var q = (query || "item").trim() || "item";
-    var n = 4 + Math.floor(rnd() * 3);
+    var n = 6 + Math.floor(rnd() * 4); // 6–9 items, one per marketplace on average
     var out = [];
     for (var i = 0; i < n; i++) {
       var d = DEMO_DOMAINS[Math.floor(rnd() * DEMO_DOMAINS.length)];
@@ -118,6 +122,23 @@
     return out;
   }
   function cap(q) { q = String(q); return q.charAt(0).toUpperCase() + q.slice(1); }
+
+  // --- Marketplace grouping ---------------------------------------------------------
+  // Groups web items by marketplace label: [{label, items}] ordered by result count
+  // desc, then label asc. Empty input → [] so the zone hides gracefully.
+  function groupByMarketplace(items) {
+    var buckets = {}, order = [];
+    (items || []).forEach(function (it) {
+      var label = it.sourceLabel || sourceLabelFromUrl(it.url || "") || "Web";
+      if (!buckets[label]) { buckets[label] = []; order.push(label); }
+      buckets[label].push(it);
+    });
+    var groups = order.map(function (l) { return { label: l, items: buckets[l] }; });
+    groups.sort(function (a, b) {
+      return (b.items.length - a.items.length) || (a.label < b.label ? -1 : (a.label > b.label ? 1 : 0));
+    });
+    return groups;
+  }
 
   // --- Public search -----------------------------------------------------------------
   // Resolves { mode:'live'|'demo', quota:bool, items, notice } — never rejects on
@@ -151,7 +172,7 @@
     adapter: adapter, search: search, searchVerbose: search,
     normalizeItem: normalizeItem, demoResults: demoResults,
     buildSearchUrl: buildSearchUrl, extractPrice: extractPrice,
-    sourceLabelFromUrl: sourceLabelFromUrl,
+    sourceLabelFromUrl: sourceLabelFromUrl, groupByMarketplace: groupByMarketplace,
     getKeys: getKeys, saveKeys: saveKeys, clearKeys: clearKeys, hasKeys: hasKeys
   };
 });
