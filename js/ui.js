@@ -175,7 +175,7 @@
       "<h1><span class=\"word-compare\">Compare</span> every used listing, everywhere.</h1>" +
       '<p class="tagline">Search once. We line up Rebuy sellers and marketplaces side by side, score the deal, and let you pick the winner.</p>' +
       '<form class="search-hero" id="heroSearch">' +
-      '<input type="search" id="heroQ" placeholder="Try &quot;ThinkPad T480&quot;…" aria-label="Search used listings" autocomplete="off">' +
+      '<input type="search" id="heroQ" placeholder="Try &quot;ThinkPad T480&quot;…" aria-label="Search used listings" autocomplete="off" enterkeyhint="search">' +
       '<button class="btn btn-primary" type="submit">Search</button>' +
       "</form>" +
       '<p class="quick-searches">Popular right now: ' +
@@ -198,7 +198,15 @@
         location.hash = "#/search?q=" + encodeURIComponent(b.getAttribute("data-q"));
       });
     });
-    setTimeout(function () { var i = $("#heroQ"); if (i) i.focus(); }, 80);
+    // Autofocus only on devices with a fine pointer (desktop). On touch devices,
+    // programmatic focus pops the keyboard and triggers password-manager /
+    // autofill accessory bars (e.g. 1Password) that render as stray floating
+    // bars over the hero. See: white-bar report 2026-10-14.
+    setTimeout(function () {
+      var fine = window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      var i = $("#heroQ");
+      if (i && fine) i.focus();
+    }, 80);
   }
 
   // ============================================================ SEARCH / RESULTS
