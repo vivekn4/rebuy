@@ -225,41 +225,89 @@
     };
   }
 
-  function cardHTML(it) {
+  // ---------- shopping cards (Google-Shopping pattern, calm theme) ----------
+  // Stars from a 0–5 rating. Only ever called with real data — never fake stars.
+  function starsHTML(rating5, sub) {
+    var r = Math.max(0, Math.min(5, +rating5 || 0));
+    var full = Math.round(r), s = "", i;
+    for (i = 0; i < 5; i++) s += i < full ? "★" : "☆";
+    return '<div class="shop-stars" role="img" aria-label="' + r.toFixed(1) + ' out of 5 stars">' +
+      '<span aria-hidden="true">' + s + "</span>" +
+      (sub ? '<span class="pct">' + esc(sub) + "</span>" : "") + "</div>";
+  }
+  // eBay feedback percentage (0–100) → stars.
+  function ebayStars(pct) {
+    if (pct == null || isNaN(+pct)) return "";
+    return starsHTML(+pct / 20, Math.round(+pct) + "% positive");
+  }
+  // Marketplace row: calm dot + name.
+  function mktRowHTML(label, hue) {
+    var h = (hue == null ? mktHue(label) : hue);
+    return '<div class="shop-mkt"><span class="mkt-dot" style="background:hsl(' + h +
+      ',42%,52%)" aria-hidden="true"></span><span>' + esc(label) + "</span></div>";
+  }
+  function demoPill(it) {
+    return it.demo ? '<span class="demo-pill">Demo</span>' : "";
+  }
+  // Shared media block: a calm placeholder letter sits behind the photo; a
+  // broken photo removes itself to reveal it.
+  function shopMediaHTML(it, href, newTab, initial) {
+    var t = newTab ? ' target="_blank" rel="noopener"' : "";
+    return '<a class="shop-media" href="' + href + '"' + t + ">" +
+      '<span class="shop-noimg" aria-hidden="true">' + esc(initial) + "</span>" +
+      (it.image ? '<img src="' + esc(it.image) + '" alt="' + esc(it.title) + '" loading="lazy" onerror="this.remove()">' : "") +
+      demoPill(it) + "</a>";
+  }
+  function condPillHTML(it) {
+    return it.condition ? '<span class="cond-pill">' + esc(condLabel(it.condition)) + "</span>" : "";
+  }
+  function priceRowHTML(it) {
+    if (!it.price) return '<div class="shop-dist">Price on site</div>';
+    return '<div class="shop-price-row"><data class="shop-price" value="' + it.price + '">' + money(it.price) +
+      "</data>" + condPillHTML(it) + "</div>";
+  }
+  function compareCheckHTML(it) {
     var checked = S.compareIds.indexOf(it.id) >= 0;
-    return '<article class="card" data-id="' + esc(it.id) + '">' +
-      '<a href="#/listing/' + esc(it.id) + '" tabindex="-1"><img class="card-img" src="' + esc(it.image) +
-      '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'"></a>' +
-      '<div class="card-body">' +
-      '<h3 class="card-title"><a href="#/listing/' + esc(it.id) + '">' + esc(it.title) + "</a>" +
-      (it._native && it._native.reduced ? '<span class="reduced-flag">Reduced</span>' : "") + "</h3>" +
-      '<div><span class="card-price">' + money(it.price) + "</span> " + dealBadge(it) + "</div>" +
-      '<div class="card-meta"><span>' + esc(condLabel(it.condition)) + "</span><span>" + esc(distLabel(it.distanceKm)) +
-      "</span><span>" + esc(timeAgo(it.listedAt)) + "</span>" + sourceBadge(it) + "</div>" +
-      '<div class="card-meta"><span>Seller: ' + esc(it.seller.name) +
-      (it.seller.verified ? ' <span class="verified">✓ verified</span>' : "") +
-      (it.seller.rating ? " · ★ " + it.seller.rating : "") + "</span></div>" +
-      '<div class="card-actions">' +
-      '<a class="btn btn-primary btn-sm" href="#/listing/' + esc(it.id) + '">View</a>' +
-      '<label class="compare-check' + (checked ? " on" : "") + '"><input type="checkbox" data-cmp="' + esc(it.id) + '"' +
-      (checked ? " checked" : "") + "> Compare</label>" +
-      "</div></div></article>";
+    return '<label class="compare-check' + (checked ? " on" : "") + '"><input type="checkbox" data-cmp="' +
+      esc(it.id) + '"' + (checked ? " checked" : "") + "> Compare</label>";
   }
 
-  function extRowHTML(it) {
-    var checked = S.compareIds.indexOf(it.id) >= 0;
-    var price = it.price ? '<strong>' + money(it.price) + "</strong> · " : "";
-    var score = it._tier ? dealBadge(it) : "";
-    return '<div class="ext-row" data-id="' + esc(it.id) + '">' +
-      (it.image ? '<img src="' + esc(it.image) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : '<span></span>') +
-      "<div>" +
-      '<p class="t"><a href="' + esc(it.url) + '" target="_blank" rel="noopener">' + esc(it.title) + "</a></p>" +
-      '<div class="m"><span class="src">' + esc(it.sourceLabel || it.source) + "</span> · " + price +
-      esc(it.condition ? condLabel(it.condition) : (it.snippet ? it.snippet.slice(0, 90) + "…" : "price on site")) + "</div>" +
-      '<div class="m" style="margin-top:.35em">' + score +
-      ' <label class="compare-check' + (checked ? " on" : "") + '" style="margin-left:.4em"><input type="checkbox" data-cmp="' + esc(it.id) + '"' +
-      (checked ? " checked" : "") + "> Compare</label></div>" +
-      "</div></div>";
+  // Native Rebuy listing card.
+  function cardHTML(it) {
+    var detailUrl = "#/listing/" + esc(it.id);
+    var stars = (it.seller && it.seller.rating != null) ? starsHTML(it.seller.rating, (+it.seller.rating).toFixed(1)) : "";
+    return '<article class="shop-card" data-id="' + esc(it.id) + '">' +
+      shopMediaHTML(it, detailUrl, false, "R") +
+      '<div class="shop-body">' +
+      mktRowHTML("On Rebuy", 115) +
+      '<h3 class="shop-title"><a href="' + detailUrl + '">' + esc(it.title) + "</a>" +
+      (it._native && it._native.reduced ? '<span class="reduced-flag">Reduced</span>' : "") + "</h3>" +
+      stars +
+      priceRowHTML(it) +
+      (it._tier ? '<div class="shop-badges">' + dealBadge(it) + "</div>" : "") +
+      (it.distanceKm != null ? '<div class="shop-dist">' + esc(distLabel(it.distanceKm)) + "</div>" : "") +
+      (it.seller && it.seller.name ? '<div class="shop-seller">Seller: ' + esc(it.seller.name) +
+        (it.seller.verified ? ' <span class="verified">✓ verified</span>' : "") + "</div>" : "") +
+      '<div class="shop-actions"><a class="btn btn-primary btn-sm" href="' + detailUrl + '">View</a>' +
+      compareCheckHTML(it) + "</div></div></article>";
+  }
+
+  // External marketplace card (eBay / second-hand web). Card leads out.
+  function extCardHTML(it) {
+    var label = it.sourceLabel || (it.source === "ebay" ? "eBay" : it.source) || "Web";
+    var url = it.url || "#";
+    var stars = (it.source === "ebay" && it.seller && it.seller.rating != null) ? ebayStars(it.seller.rating) : "";
+    return '<article class="shop-card" data-id="' + esc(it.id) + '">' +
+      shopMediaHTML(it, url, true, label.charAt(0).toUpperCase()) +
+      '<div class="shop-body">' +
+      mktRowHTML(label) +
+      '<h3 class="shop-title"><a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(it.title) + "</a></h3>" +
+      stars +
+      priceRowHTML(it) +
+      (it._tier ? '<div class="shop-badges">' + dealBadge(it) + "</div>" : "") +
+      (it.snippet ? '<p class="shop-snippet">' + esc(it.snippet.slice(0, 110)) + "…</p>" : "") +
+      '<div class="shop-actions"><a class="btn btn-ghost btn-sm" href="' + esc(url) +
+      '" target="_blank" rel="noopener">View listing</a>' + compareCheckHTML(it) + "</div></div></article>";
   }
 
   function wireCompareBoxes(scope) {
@@ -407,7 +455,7 @@
       return '<div class="market-group">' +
         '<div class="mkt-head"><span class="mkt-dot" style="background:hsl(' + mktHue(g.label) + ',42%,52%)"></span>' +
         '<span class="mkt-name">' + esc(g.label) + '</span><span class="mkt-count">' + g.items.length + "</span></div>" +
-        g.items.map(extRowHTML).join("") + "</div>";
+        '<div class="cards">' + g.items.map(extCardHTML).join("") + "</div></div>";
     }).join("");
   }
 
@@ -435,7 +483,7 @@
       if (R.ebay.notice && R.ebay.mode === "demo")
         html += '<div class="mode-note demo">' + esc(R.ebay.notice) + "</div>";
       html += R.ebayItems.length
-        ? R.ebayItems.map(extRowHTML).join("")
+        ? '<div class="cards">' + R.ebayItems.map(extCardHTML).join("") + "</div>"
         : '<p class="hint">No eBay matches for this search.</p>';
     }
     if (showWeb) {
@@ -460,7 +508,7 @@
         '</h2><span class="count">' + items.length + "</span></div>" +
         modeNote(r, "add your free key in Settings") +
         (items.length
-          ? (f.src === "web" ? webGroupsHTML(items) : items.map(extRowHTML).join(""))
+          ? (f.src === "web" ? webGroupsHTML(items) : '<div class="cards">' + items.map(extCardHTML).join("") + "</div>")
           : '<div class="empty"><p class="serif">No matches here.</p></div>') +
         (f.src === "web" ? '<div class="tier-label">Search directly on</div>' +
           deepLinkChipsHTML(q) + '<p class="honest-note">' + esc(DL.HONEST_NOTE) + "</p>" : "");
@@ -506,6 +554,7 @@
       '<p class="hint" style="margin-top:.6em">Similar items that sold locally — what the market actually paid.</p>'
         : '<p class="hint">No local comps for this one yet.</p>') + "</div>" +
       "</div><div>" +
+      mktRowHTML("On Rebuy", 115) +
       '<h1 class="serif" style="font-size:1.8rem">' + esc(l.title) +
       (l.reduced ? '<span class="reduced-flag">Reduced</span>' : "") + "</h1>" +
       '<p><span class="detail-price">' + money(l.price) + "</span> " + dealBadge(n) + "</p>" +
@@ -513,7 +562,7 @@
       '<div class="seller-card"><h3 class="serif">Seller</h3><div class="seller-row"><span class="avatar">' +
       esc(l.seller.name.charAt(0)) + '</span><div><strong>' + esc(l.seller.name) + "</strong><br>" +
       (l.seller.verified ? '<span class="verified">✓ Verified seller</span><br>' : "") +
-      '<span class="hint">★ ' + l.seller.rating + " · " + l.seller.trades + " trades</span></div></div></div>" +
+      (l.seller.rating != null ? starsHTML(l.seller.rating, (+l.seller.rating).toFixed(1) + " · " + l.seller.trades + " trades") : '<span class="hint">' + l.seller.trades + " trades</span>") + "</div></div></div>" +
       '<div class="panel"><div class="tier-label">Haggle Engine</div><h3 class="serif">What should I offer?</h3>' +
       "<p>Data-backed suggestion: <strong>" + money(suggest) + "</strong></p>" +
       '<p class="hint">Fair range ' + money(range.low) + "–" + money(range.high) +
