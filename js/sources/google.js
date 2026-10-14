@@ -109,7 +109,7 @@
         source: "web", sourceLabel: d[1], demo: true,
         title: cap(q) + " — " + cond + " — $" + price,
         price: price, currency: "CAD", condition: null, image: "",
-        url: "https://" + d[0] + "/",
+        url: "https://www.google.com/search?q=" + encodeURIComponent("site:" + d[0] + " " + q),
         location: { label: d[1] }, distanceKm: null, listedAt: null,
         seller: null,
         snippet: cond + " " + q + " listed for $" + price + ". Open the original listing for photos and details."
@@ -125,7 +125,8 @@
   // deep links with a small note), everything else degrades to labeled demo mode.
   function search(query) {
     if (!hasKeys()) return Promise.resolve({ mode: "demo", quota: false, items: demoResults(query), notice: null });
-    return fetch(buildSearchUrl(query)).then(function (r) {
+    // Never throw synchronously — degrade to demo instead.
+    return Promise.resolve().then(function () { return fetch(buildSearchUrl(query)); }).then(function (r) {
       if (r.status === 429) return { mode: "live", quota: true, items: [], notice: "External results paused — quota." };
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();

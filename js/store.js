@@ -10,7 +10,7 @@
   var VERSION = 1;
 
   function blank() {
-    return { version: VERSION, listings: [], purchases: [], offers: [], alerts: [], seededAt: null };
+    return { version: VERSION, listings: [], purchases: [], offers: [], alerts: [], messages: [], seededAt: null };
   }
 
   function _read() {
@@ -20,7 +20,7 @@
       var d = JSON.parse(raw);
       if (!d || d.version !== VERSION) return blank();
       d.listings = d.listings || []; d.purchases = d.purchases || [];
-      d.offers = d.offers || []; d.alerts = d.alerts || [];
+      d.offers = d.offers || []; d.alerts = d.alerts || []; d.messages = d.messages || [];
       return d;
     } catch (e) { return blank(); }
   }
@@ -65,6 +65,15 @@
     alerts: function () { return data().alerts; },
     addAlert: function (a) { a.id = a.id || uid("a"); a.createdAt = new Date().toISOString(); data().alerts.push(a); return save(), a; },
     removeAlert: function (id) { var d = data(); d.alerts = d.alerts.filter(function (a) { return a.id !== id; }); return save(); },
+
+    messagesFor: function (listingId) {
+      return data().messages.filter(function (m) { return m.listingId === listingId; })
+        .sort(function (a, b) { return a.at < b.at ? -1 : 1; });
+    },
+    addMessage: function (m) {
+      m.id = m.id || uid("m"); m.at = m.at || new Date().toISOString();
+      data().messages.push(m); return save(), m;
+    },
 
     reset: reset
   };

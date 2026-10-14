@@ -21,14 +21,34 @@
     };
   }
 
+  // Everyday words → categories, so "laptop" finds computers and "bike" finds bikes.
+  var CAT_ALIASES = {
+    laptop: "computers", laptops: "computers", notebook: "computers", notebooks: "computers",
+    pc: "computers", desktop: "computers",
+    phone: "phones", phones: "phones", mobile: "phones", smartphone: "phones", iphone: "phones",
+    bike: "bikes", bikes: "bikes", bicycle: "bikes",
+    tv: "electronics", television: "electronics", monitor: "electronics", headphones: "electronics",
+    camera: "cameras", lens: "cameras",
+    console: "consoles", ps5: "consoles", xbox: "consoles", switch: "consoles",
+    sofa: "furniture", couch: "furniture", desk: "furniture", chair: "furniture", table: "furniture",
+    fridge: "appliances", washer: "appliances", microwave: "appliances",
+    guitar: "instruments", piano: "instruments", keyboard: "instruments", drums: "instruments"
+  };
+
   function matches(l, query, filters) {
     filters = filters || {};
     var q = (query || "").trim().toLowerCase();
     if (q) {
       var hay = (l.title + " " + (l.description || "") + " " + (l.category || "")).toLowerCase();
-      // model-aware: every query word must appear (so "ThinkPad T480" narrows properly)
+      // model-aware: every query word must appear (so "ThinkPad T480" narrows properly);
+      // everyday words also match their category ("laptop" → computers)
       var words = q.split(/\s+/);
-      for (var i = 0; i < words.length; i++) if (hay.indexOf(words[i]) < 0) return false;
+      for (var i = 0; i < words.length; i++) {
+        var w = words[i];
+        if (hay.indexOf(w) >= 0) continue;
+        var cat = CAT_ALIASES[w];
+        if (!cat || hay.indexOf(cat) < 0) return false;
+      }
     }
     if (filters.maxPrice != null && l.price > filters.maxPrice) return false;
     if (filters.minPrice != null && l.price < filters.minPrice) return false;

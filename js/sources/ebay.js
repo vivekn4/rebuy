@@ -136,11 +136,19 @@
     return "data:image/svg+xml," + encodeURIComponent(svg);
   }
 
+  // Demo link-out: a real eBay search for the queried product, sorted by
+  // price (lowest first). Honest link-outs even in demo mode.
+  function demoSearchUrl(query) {
+    var q = (query || "").trim();
+    return "https://www.ebay.ca/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sop=15";
+  }
+
   function demoResults(query, filters) {
     filters = filters || {};
     var rnd = mulberry(hashStr("rebuy-demo:" + (query || "").toLowerCase().trim()));
     var n = 6 + Math.floor(rnd() * 5);
     var base = 80 + Math.floor(rnd() * 700);
+    var linkUrl = demoSearchUrl(query);
     var out = [];
     for (var i = 0; i < n; i++) {
       var c = DEMO_CONDS[Math.floor(rnd() * DEMO_CONDS.length)];
@@ -152,7 +160,7 @@
         source: "ebay", demo: true,
         title: capQuery(query) + " — " + c[1].toLowerCase() + pick(["", " (local pickup)", " + free shipping", " — tested & working"], rnd),
         price: price, currency: "CAD", condition: c[0],
-        image: demoArt(i), url: "https://www.ebay.ca/",
+        image: demoArt(i), url: linkUrl,
         location: { label: DEMO_CITIES[Math.floor(rnd() * DEMO_CITIES.length)] },
         distanceKm: null,
         listedAt: new Date(Date.now() - Math.floor(rnd() * 20) * 864e5).toISOString(),
@@ -173,7 +181,9 @@
   function search(query, filters) {
     filters = filters || {};
     if (!hasKeys()) return Promise.resolve({ mode: "demo", items: demoResults(query, filters), notice: null });
-    return ensureToken().then(function (tok) {
+    // Never throw synchronously (e.g. no fetch in the environment) — the UI
+    // always gets a promise that degrades to demo.
+    return Promise.resolve().then(function () { return ensureToken(); }).then(function (tok) {
       return fetch(buildSearchUrl(query, filters), {
         headers: { "Authorization": "Bearer " + tok, "X-EBAY-C-MARKETPLACE-ID": marketplace() }
       });
@@ -200,7 +210,7 @@
   return {
     adapter: adapter, search: search, searchVerbose: search,
     normalizeItem: normalizeItem, mapCondition: mapCondition,
-    demoResults: demoResults, buildSearchUrl: buildSearchUrl,
+    demoResults: demoResults, demoSearchUrl: demoSearchUrl, buildSearchUrl: buildSearchUrl,
     isTokenFresh: isTokenFresh, getKeys: getKeys, saveKeys: saveKeys,
     clearKeys: clearKeys, hasKeys: hasKeys, marketplace: marketplace, hashStr: hashStr
   };
