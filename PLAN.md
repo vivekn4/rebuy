@@ -1,339 +1,139 @@
-# Rebuy — PLAN
+# Rebuy — Team Pass PLAN
 
-*Used-goods AGGREGATOR + comparison engine ("Kayak for used goods"). Vanilla HTML/CSS/JS, zero dependencies, zero build step, GitHub Pages direct. Written 2026-10-14; aggregator pivot same day.*
+*Pass date: 2026-10-15. Scope: the live site at https://vivekn4.github.io/rebuy/ (repo `vivekn4/rebuy`).*
+*North star: `workspace/.jarvis/workflow-runs/workflow-run-f59045dac9b74e08afb13be86a1a57bf/work/VISION.md` — the bar every team signs off against.*
+*This plan supersedes the 2026-10-14 build plan (preserved in git history). This pass adds things; it does not rebuild the app.*
 
-## 0. Product model (post-pivot)
+---
 
-Rebuy is a **comparison engine over multiple used-goods sources**, not primarily a list-it-yourself marketplace. Core experience: search "ThinkPad T480" → normalized results from all sources with source badges, ranked/sorted, Deal Scores computed cross-source → select 2–4 → side-by-side **Compare view** (price, condition, deal score, distance, source, link-out). "Sell on Rebuy" remains as a secondary tab; native listings appear in aggregated results with a Rebuy badge.
+## 1. User story
 
-**Data-source reality (verified 2026-10-14):** 9 of 10 major used marketplaces offer NO public listing-search API (Facebook Marketplace, Kijiji, Craigslist, OfferUp, OLX, Gumtree, Mercari, Depop, Poshmark). Only **eBay** has a real free API (Developers Program → Browse API, client-credentials OAuth, no card). Architecture reflects this: one real adapter (eBay), one native adapter (Rebuy), honest coming-soon slots for the rest.
+Maya in Sudbury wants a used bike for her kid before winter. She opens Rebuy on her phone, taps the search bar, types "bike". Within seconds she sees real eBay listings with actual product photos, Rebuy listings near her, a single "Best value" pick at the top with a plain reason ("$120 below the going rate"), and a location pill that says "Within 25 km of Sudbury, ON". She taps a listing, messages the seller, and sees a calm note: *Rebuy never takes a cut — you pay the seller in person.*
 
-## 0b. Refined UX spec (2026-10-14, supersedes earlier layout notes)
+She has a question — "Is it really free?" — so she taps the small chat bubble in the corner. The answer appears instantly, plain and short. She taps "Save this search as an alert" so she gets pinged when a cheaper bike shows up. She comes back because Rebuy found her something good and tells her when something better appears.
 
-**Homepage — one action, Google-like calm.** A single centered search bar is the whole page. Above it, the brand statement: wordmark **"Rebuy"** with the tagline **"Compare every used listing, everywhere."** The word *"Compare"* is the product's identity — comparison is the promise, not listing. Minimal chrome: quiet nav (Spend · Sell · Alerts · Settings), location pill ("Within 25 km of Sudbury, ON"), muted footer. No hero carousel, no category tiles screaming for attention — the search bar IS the homepage.
+That's the whole pass: make that story true, every screen, every label, no fakery.
 
-**Results page — two zones:**
-1. **Main column — "On Rebuy":** native listings (Rebuy adapter / local listings). Full cards: photo, price, condition, Deal Score hang-tag badge, distance, seller card with verification + rating, **Make Offer**, **Message seller**. Zero-commission note sits beside purchase actions: *"Rebuy never takes a cut — you pay the seller in person."*
-2. **Side panel — "Also listed on":** the same (or similar) product found on external platforms, for price/condition comparison. Contents in priority order:
-   - **(a) eBay** via Browse API adapter — real price/condition/image/link-out in live mode; clearly-labeled demo results when no key. Never errors.
-   - **(b) Google Programmable Search** (optional second key) — Custom Search JSON API results (free 100 queries/day) from a marketplace-scoped search engine. Title/snippet/link with source label. Quota-exceeded (429) degrades **silently** to (c) with a small note: *"External results paused — quota."* Demo mode when no key.
-   - **(c) Smart deep links** — always available, no key: "Search this on Kijiji →", "→ Facebook Marketplace", "→ Craigslist", "→ OfferUp". Each opens that platform's own search URL with the query pre-filled in a new tab. Honest microcopy: *"Some marketplaces don't offer public APIs, so we send you to their search instead of pretending."*
-   - The panel header shows which tier is live ("Live eBay results" / "Demo results — add your free eBay key in Settings for live listings").
+---
 
-**Compare view — the signature interaction.** Checkboxes on cards in EITHER zone → Compare tray (bottom, slides up gently) → side-by-side table: price, condition, deal score, distance, source, link-out / contact seller. Calm, delightful: 250ms ease, no confetti. Selected rows highlight with a soft sage ring.
+## 2. Scope limits
 
-**Transaction model (locked):** Rebuy takes **ZERO commission**. Buying on Rebuy = contact / make-offer / message the seller in-app → arrange an in-person meetup → pay the seller in person (cash / e-transfer). Stated plainly near every purchase action. No payments integration, ever. The business is **price comparison + engagement**.
+**IN for this pass:**
+1. FAQ chatbot widget: local knowledge base answers instantly (works offline), free Pollinations text API as fallback with a Rebuy-scoped system prompt. No keys in the repo, no paid anything.
+2. Location model: 25 km default radius around the user's location/Sudbury, a radius selector (10 / 25 / 50 / 100 km), honest location pill that reflects the actual filter. Sudbury-only beta — never pretend to cover other cities.
+3. Verify the three just-shipped improvements on the live site: real eBay thumbnails after the one-tap `#ebay-setup` flow, the Best Value spotlight hero, the Sudbury-area filter toggle with its graceful empty state.
+4. Delete `frag-test.html` from the repo root (temporary diagnostic page — must not ship).
+5. Full QC loop and verified pushes to the live site (one file per push, each verified).
 
-**Settings page:** two optional free-key slots —
-- *"eBay API key (App ID + Secret)"* — where: eBay Developers Program, free, no card → unlocks live eBay results in "Also listed on".
-- *"Google Search API key + Search Engine ID"* — where: Google Cloud Console (Custom Search API, free 100/day) + Programmable Search Engine restricted to marketplace domains → unlocks cross-marketplace snippets.
-Everything works in demo mode without either key. Keys live in localStorage on the user's own device, sent only to api.ebay.com / googleapis.com.
+**OUT — do not build, do not suggest:**
+- Money flows, forever. No payments, no checkout, no escrow. In-person payments only.
+- Other cities. Sudbury-only beta. No "coming soon: Toronto" marketing.
+- Fake or unlabeled data. Demo vs live always labeled. The chatbot never invents listings, prices, features, or locations.
+- Paid services. User keys (eBay Cert ID, Google key) live only on the user's device (localStorage) — never in the repo, chat, or commits.
+- Maximalist SFX/VFX. This is the deliberate anti-maximalist project.
+- Platform impersonation. Deep links stay honest ("we send you to their search instead of pretending").
+- Seller verification theatre. Show what we know; mark "unverified" when we don't.
+- Chatbot scope creep. Rebuy help topics only — not a shopping concierge, not a haggling agent, not a general AI.
 
-**Source filter chips** on results: All / eBay / Rebuy / Kijiji / Facebook / Craigslist / OfferUp — the last four rendered disabled with tooltip *"No public API yet"* (honest coming-soon slots; adding a real adapter later is one file + one `register()` call).
+---
 
-## 1. What it is
+## 3. Per-team deliverables
 
-A calming, hyperlocal (25 km beta radius) used-goods marketplace for Sudbury ON. Three pillars:
+### 3.1 UI/UX team (Design Lead, UX Designer, Visual Designer)
 
-1. **Market research built in** — every listing carries a Deal Score (Great deal / Fair / Overpriced) computed from new-retail reference price + depreciation + condition + local sold comps.
-2. **Spend tab** — log purchases; see last-30-days spend (animated), monthly history chart, per-category breakdown, and "Saved vs. new" hero.
-3. **Haggle Engine** — data-backed offer suggestions for buyers ("offer $X"), list-price guidance for sellers, structured offers with counter-offers and eBay-style auto accept/decline thresholds.
+**Chatbot widget:**
+- Small bottom-right bubble (terracotta, Lora or quiet glyph — never an emoji), ≥44px tap target.
+- Expands to a calm cream panel (~340px, bottom-sheet on phone) with: header ("Rebuy help"), message list, quick-answer chips ("How does Rebuy work?", "Is it free?", "Safe meetup tips", "Turn on live eBay"), text input + send.
+- Does NOT cover purchase actions or the Compare tray on a 360px screen. z-index below modals is wrong; above content but tucked. Test at 360×740.
+- Typing indicator: minimal, no sound. Offline state: plain text — *"I'm offline right now — here are quick answers"* with the quick chips still tappable.
+- All copy human-made: short, neighborly, zero AI-tell vocabulary.
 
-## 2. Aesthetic direction (frontend-design skill)
+**Radius selector + location pill:**
+- Selector near the search bar or in the location pill itself: 10 / 25 / 50 / 100 km, default 25.
+- Pill copy always reflects reality: *"Within 25 km of Sudbury, ON"* — updates when the user changes the radius or when geolocation falls back (*"Rebuy is in beta around Sudbury, ON — showing Sudbury-area listings"* for off-Sudbury users).
+- Changing the radius re-runs the current search. The "Beta: showing items within 25 km" badge must use the live value, not a hardcoded string.
 
-**Subject grounding:** pre-loved goods, secondhand treasures, neighborhood exchange. The governing motif is the **humble price hang-tag** — kraft-paper tags tied with string, the way good thrift shops do it. Copy framing: every item gets "a second story."
+**Retention UX (with the retention team):**
+- One-tap "Alert me" on every results page (saved search → in-app alert). This is the #1 retention driver; it must be impossible to miss and trivial to tap.
+- Chatbot quick chips double as discovery: "Turn on live eBay" leads to Settings `#ebay-setup`.
 
-**The one memorable thing:** the Deal Score rendered as a little hang-tag badge (tag silhouette with punched hole + string), stamped Great deal / Fair / Overpriced. Everything else stays quiet and disciplined.
+### 3.2 Dev team (Tech Lead, Frontend Dev, Integrations Engineer)
 
-**Anti-tell review:** the brief pins warm/cream/terracotta/sage, so we follow it — but we avoid the generic cluster (no ALL-CAPS eyebrow labels, no "WORD — fragment" labels, no single-word accent italics, no gradient washes, no identical SaaS cards). Distinctiveness comes from the hang-tag motif, Lora's organic curves, and hand-drawn-feeling details (dashed "string" dividers, stamped badges).
+**Chatbot (`js/chatbot.js`, new):**
+- Tier 1 — local KB: ~12 FAQs as plain string-matched Q&A (normalizer: lowercase, strip punctuation, keyword scoring). Answers for: how Rebuy works, zero commission, is it free, safe in-person meetups (reference the seeded meetup spots: Greater Sudbury Police HQ lobby, New Sudbury Centre food court), turning on live eBay (`#/settings`, `#ebay-setup` link), alerts, selling on Rebuy, search radius, what Rebuy covers (Sudbury only). Instant, synchronous, works offline.
+- Tier 2 — Pollinations fallback: `POST https://text.pollinations.ai/` with a system prompt constraining it to Rebuy help topics; instructions: never invent listings, prices, features, or locations; never claim coverage beyond Sudbury; defer to the seller or Settings when unsure; off-topic questions get one polite redirect sentence. Timeout 12s; on failure, say so plainly and offer the quick chips. No retries that hang a spinner.
+- Sanitize every rendered answer (escapeHtml path — same rule as listing titles). No raw innerHTML from model output.
+- Widget mounted from `app.js` on all views. Respect `prefers-reduced-motion` (instant panel, no slide).
 
-**Design tokens:**
-```
---cream:      #FFFBEB  (paper background)
---card:       #FFFFFF
---ink:        #292524  (warm stone)
---ink-soft:   #57534E
---clay:       #9A3412  (deep terracotta — primary; deliberately deeper than the #D97757 tell)
---clay-deep:  #7C2D12
---sage:       #5F7A61  (deal/savings green)
---sage-soft:  #E9EFE4
---amber:      #B45309  (fair/warning)
---amber-soft: #FBF3E4
---blush:      #F8F2EF  (muted surfaces)
---line:       #EBDFC9  (borders)
---radius:     18px cards / 999px pills
---shadow:     0 10px 30px rgba(154,52,18,.08)
-```
-**Type:** Lora (display/headings, 500/600) + Raleway (body/UI, 400/500/600/700) via Google Fonts. Left-aligned, generous whitespace, line length < 72ch.
+**Location (touch `js/geo.js`, `js/ui.js`):**
+- Expose `setRadiusKm()` in geo/store; persist to localStorage (`rebuy:v1` settings).
+- Radius selector UI wired to it; changing re-runs the current search with the new radius.
+- The location pill and "Beta" badge read the live radius value.
+- Keep the existing geolocation flow: 8s timeout → Sudbury fallback with an honest notice; manual override stays.
 
-## 3. Motion (emilkowalski-motion, calming)
+**Fixes from the review (already confirmed in code, verify + tighten):**
+- Best Value hero: add a plain-language reason line ("$120 below the going rate for this condition") next to the badge; keep it honestly labeled when all results are demo (it must not look like a live pick).
+- Sudbury-area eBay filter: toggle present, empty state present ("No Sudbury-area eBay listings for this search" + "Show all Canadian results"). Verify on live: real thumbnails after `#ebay-setup`, secret stripped from the URL bar, keys only in localStorage.
+- `frag-test.html`: delete from repo root, push, confirm the live URL 404s.
 
-Decision order per animation: should it animate → purpose → properties → curve/duration → interruption → exit.
-- **One** orchestrated page-load moment: hero fades + rises gently (opacity + 12px translateY, 500ms ease-out). Nothing else auto-animates.
-- Cards: hover lift only — translateY(-3px) + shadow deepen, 200ms ease-out. No bounce, no overshoot (calming ≠ playful).
-- Buttons: 150ms background deepen; press scale 0.98.
-- Modals (listing detail is a page; offer dialog is a modal): fade + scale 0.97→1, 250ms ease-out, origin-aware from the trigger where cheap.
-- Chart: bars grow on first view (600ms ease-out, staggered 30ms — the one place stagger is earned).
-- Counter: 650ms ease-in-out count-up, trunc rounding.
-- `prefers-reduced-motion`: all of the above collapse to instant.
+### 3.3 QC team (QA Lead, QA Engineer, Compatibility Tester)
 
-## 4. Sound (ui-sound-design, calming tunings)
+- `node --check` every JS file; `node --test test/` must stay green.
+- Extend `test-harness/journeys.js`: chatbot open → ask Tier-1 question → assert instant local answer (no network); ask unknown question → assert Pollinations fallback path or graceful offline message; change radius 25→50→10 → assert pill text and result counts change; Sudbury toggle on/off → assert filter + empty state; Best Value hero renders with a reason line above results.
+- Live-site verification (the actual bar): homepage, results, compare, settings, chatbot open/ask/close — all with zero console errors at https://vivekn4.github.io/rebuy/.
+- Mobile checks: 360px wide, Android-relevant: widget doesn't cover actions, radius selector tappable, compare tray slides under the widget correctly.
+- `frag-test.html` gone from repo AND live 404.
+- axe-core pass in a real browser (flagged earlier as hand-to-parent — do it now via the browser route).
+- html-validate clean after the new DOM.
 
-Synthesized Web Audio, singleton context, persisted mute toggle in header.
-- `click` — soft: bandpass 1200Hz, Q1, 0.06s, vol 0.15 (buttons, tabs)
-- `toggle` — minimal: sine 550→650Hz, 0.08s, vol 0.12 (filters, mute)
-- `success` — gentle: triangle two-tone major third, 0.18s notes, vol 0.15 (offer sent, listing posted, purchase logged)
-- `notify` — soft bell: 660Hz, modRatio 1.2, modDepth 500, 0.6s, vol 0.15 (saved-search alert)
-- `error` — gentle: sine 350→250Hz, 0.2s, vol 0.15 (form validation)
-- No hover sounds, no whoosh/pop. Master volume capped 0.8; rules: context-singleton, gain-no-zero-target, set-before-ramp, stop-after-envelope.
+### 3.4 Retention team (Retention Lead, Lifecycle Marketer, Community Writer)
 
-## 5. Architecture
+- Ranked drivers: (1) alerts/saved searches, (2) trust (honest labels), (3) deal scores that were right, (4) Spend tab ("you saved $340 vs. buying new"), (5) chatbot (a 2-second answer saves a session).
+- Deliverable: the one-tap "Alert me" interaction copy + empty-state copy ("Nothing here yet — we'll ping you when a $150 bike lands in your radius") and the alert notification microcopy. Quiet, rare, useful — no streaks, no badges, no guilt.
+- Chatbot content: write the 12 Tier-1 FAQ answers in the human-made voice (short sentences, no AI tells, reads like a helpful neighbor). Own the system prompt's honesty rules.
+- Post-ship: note which retention driver each change serves in the ship report.
 
-```
-index.html        — shell: header/nav, view root, modals, toast region, footer (VN)
-styles.css        — tokens + components
-js/store.js       — data layer: versioned localStorage (KEY 'rebuy:v1'), seed on first run,
-                    CRUD for listings/purchases/offers/alerts; backend-swappable interface
-js/seed.js        — 24 listings around Sudbury ON (lat/lng), sellers, sold comps, meetup spots
-js/deals.js       — deal-score engine: absolute (newPrice ref) + relative (vs result-set median) paths
-js/geo.js         — geolocation + Haversine + 25km filter (pure, UMD)
-js/offers.js      — offer math: suggestion, auto-thresholds, counter logic (pure, UMD)
-js/spend.js       — purchase aggregation: buckets, ranges, savings (pure, UMD)
-js/charts.js      — hand-drawn canvas charts (monthly bars, category bars)
-js/sound.js       — WebAudio SFX library + persisted mute
-js/sources/
-  adapter.js      — SourceAdapter interface + registry: search(query, filters) → normalized[]
-  ebay.js         — eBay Browse API adapter: live mode (client-credentials OAuth, token cache)
-                    + clearly-labeled demo mode (seeded mock results, no key needed)
-  rebuy.js        — native listings adapter (store/seed → normalized)
-js/ui.js          — hash router + view renderers + interactions (search hero, chips, compare tray/table)
-js/app.js         — bootstrap
-assets/           — SVG placeholder art per category (data URIs in seed), screenshot.png (mockup)
-test/             — node --test suites for deals/geo/offers/spend/sources
-```
+### 3.5 Specialists (Marketplace Analyst, Trust & Safety)
 
-Views (hash routing): `#/search` (home) `#/compare` `#/sell` (secondary) `#/spend` `#/alerts` `#/offers` `#/settings`.
+- Marketplace Analyst: confirm the deep-link table (`js/sources/deeplinks.js`) is still accurate; verify the eBay demo/live labeling logic; spot-check that demo cards carry the "Demo" pill and live cards don't.
+- Trust & Safety: review seller-messaging copy and meetup safety content (Police HQ lobby / New Sudbury Centre suggestions), confirm zero-commission wording sits beside purchase actions, confirm no key material is anywhere in the repo or commits (`git grep` for cert/app-id patterns), confirm the chatbot cannot be tricked into giving meetup advice beyond public safety basics.
 
-## 5b. eBay Browse API integration design
+### 3.6 Integrator + Release Manager
 
-**Why eBay:** the only major used marketplace with a free public listing-search API. eBay Developers Program → create app → get App ID (client ID) + Cert ID (client secret). No card required.
+- Integrator merges all team branches into one coherent tree; resolves conflicts in `ui.js` (router) and `styles.css` (tokens only — palette is locked).
+- Release Manager pushes via the GitHub connector `push_files`, ONE file per call (multi-file payloads hang — verified lesson), verifies each with `get_file_contents`, then confirms the live site reflects the change. Final live-site smoke: search "bike" end-to-end on a phone-width viewport, chatbot ask, radius change, `#ebay-setup` present and functional.
 
-**Auth (client-credentials grant, all client-side):**
-```
-POST https://api.ebay.com/identity/v1/oauth2/token
-Authorization: Basic base64(clientId:clientSecret)
-Content-Type: application/x-www-form-urlencoded
-Body: grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope/buy.browse
-→ { access_token, expires_in: 7200, token_type: "Application Access Token" }
-```
-Token cached in localStorage `rebuy:ebay_token` as {token, expiresAt: Date.now()+expires_in*1000−60000}. Reused until expiry; refreshed silently on next search.
+---
 
-**Search:**
-```
-GET https://api.ebay.com/buy/browse/v1/item_summary/search
-  ?q={query}&limit=50&filter=price:[{min}..{max}],priceCurrency:CAD,conditions:{NEW,USED,...}
-Headers: Authorization: Bearer {token}
-         X-EBAY-C-MARKETPLACE-ID: EBAY_CA   (user picks CA/US in Settings)
-→ { itemSummaries: [{ itemId, title, price{value,currency}, condition,
-     image{imageUrl}, itemWebUrl, itemLocation{city,country},
-     seller{username,feedbackScore,feedbackPercentage}, itemCreationDate }] }
-```
-
-**Normalization (adapter.js contract):**
-```
-{ id, source:'ebay'|'rebuy', title, price, currency, condition: like-new|good|fair|parts,
-  image, url, location:{label, lat?, lng?}, distanceKm?, listedAt,
-  seller:{name, rating?, verified?}, newPrice?, year?, category? }
-```
-eBay condition map: "New"/"Open box"→like-new; "Certified - Refurbished"/"Excellent - Refurbished"→like-new; "Used"/"Good - Refurbished"→good; "For parts or not working"→parts; default good. eBay location usually city-only → distanceKm null → "distance n/a" (never filtered out by radius).
-
-**Demo mode (no key):** `demoResults(query)` — seeded PRNG from query string → 6–10 plausible listings (query-derived titles, varied prices/conditions, Canadian cities, SVG art). Results carry `demo:true`; UI banner: "Demo results — add your free eBay key in Settings for live listings." Never errors, never empty.
-
-**Rate-limit respect:** debounce search input 400ms; cache results per normalized query 10 min (memory); single token for the session.
-
-## 5d. Google Programmable Search adapter design (external tier 2)
-
-**Why:** eBay alone doesn't cover Kijiji/FB/Craigslist/OfferUp (no public APIs). The Google Custom Search JSON API (free 100 queries/day, no card) + a user-created Programmable Search Engine (PSE) restricted to marketplace domains (kijiji.ca, craigslist.org, facebook.com/marketplace, offerup.com, gumtree.com…) gives *title + snippet + link* results across those sites. Good enough for the "Also listed on" comparison panel; not structured enough for Deal Scores (no prices) — prices are scraped from snippets opportunistically ("$250" regex), scored only when found, else shown unscored.
-
-**Auth:** plain API key + engine ID in the query string (no OAuth):
-```
-GET https://www.googleapis.com/customsearch/v1
-  ?key={API_KEY}&cx={ENGINE_ID}&q={query}&num=10&gl=ca&lr=lang_en
-→ { items: [{ title, link, snippet, pagemap?: { cse_thumbnail?: [{src}] } }] }
-```
-Keys stored in localStorage `rebuy:gse_keys` {apiKey, engineId}; nothing else is needed.
-
-**Normalization:** source label derived from link domain ("kijiji.ca"→"Kijiji", "facebook.com"→"Facebook", "craigslist.org"→"Craigslist", "offerup.com"→"OfferUp", else domain root). `condition` → null ("not stated"), `price` → snippet price-regex or null, `distanceKm` → null. `url` = item link (opens in new tab).
-
-**Quota handling:** HTTP 429 → throw/flag `{quota:true}`. UI catches it, silently drops to deep links with a small note "External results paused — quota." Also cache results per normalized query in memory for 30 min (CSE's 100/day is tight; debounced input + cache keeps us well under).
-
-**Demo mode (no key):** seeded mock snippets (query-derived titles, domain labels, prices from seeded PRNG), `demo:true`, panel banner: "Demo results — add your free Google key in Settings for live cross-marketplace results." Never errors, never empty.
-
-**New bugs + mitigations (append to §7):**
-| Google CSE quota (100/day free) exhausted | 429 → silent deep-link fallback + "external results paused — quota" note; 30-min in-memory cache per query; search input debounced 600ms on this tier |
-| CSE snippet price regex misfires ("$250" in prose) | price only used for sorting when regex finds a leading "$NNN" near the title; otherwise null → unscored row, no badge |
-| CSE results stale / not local | label says "web results, not distance-checked" — never claim proximity for tier-2 results |
-| Deep-link URL formats change per platform | central DEEP_LINKS table, one place to fix; links open in new tab with rel=noopener |
-
-## 5c. Deal score v2 (cross-source)
-
-```
-dealInfo(item, ctx):
-  if item.newPrice:  absolute path (original formula vs fairPrice)
-  else:              relative path — median = median(prices of current result set)
-                     score = clamp(0..100, round(75 + 75*(1 − price/median)))
-                     label suffix "vs similar listings"
-tiers unchanged: ≥85 Great deal (sage) · 60–84 Fair (amber) · <60 Overpriced (clay-deep)
-```
-Rationale: on aggregated results the moat is *comparability* — a ThinkPad at $280 next to five others at $340+ should score well even without a new-retail reference.
-
-## 6. Deal-score formula
-
-```
-ageYears  = max(0, currentYear - year)
-deprRate  = { electronics:.25, phones:.25, computers:.25, cameras:.18, consoles:.20,
-              bikes:.12, furniture:.15, appliances:.15, instruments:.12, other:.15 }[category]
-floorF    = 0.15
-fairPrice = newPrice * max(floorF, (1 - deprRate)^ageYears) * condMult
-condMult  = { like-new:1.0, good:0.9, fair:0.75, parts:0.4 }[condition]
-// local comp adjustment (needs ≥3 sold comps in category):
-if comps>=3: fairPrice = 0.7*fairPrice + 0.3*median(comps)
-ratio     = price / fairPrice
-score     = clamp(0..100, round(75 + 75*(1 - ratio)))
-// price==fair → 75 · 20% below → 90 · 20% above → 60 · 50% below → 100 · 50% above → 38
-tiers: ≥85 "Great deal" (sage) · 60–84 "Fair" (amber) · <60 "Overpriced" (clay-deep)
-```
-
-**Haggle math:**
-```
-typicalDiscount = { electronics:.12, phones:.12, computers:.12, cameras:.12, consoles:.10,
-                    bikes:.10, furniture:.15, appliances:.15, instruments:.12, other:.12 }
-suggestedOffer  = round5(price * (1 - typicalDiscount))
-sellerGuide     = round5(fairPrice * 1.08)   // "list here; expect to settle near $fairPrice within a week"
-// auto thresholds per listing (seeded): autoAcceptAt = round5(fairPrice*0.97), autoDeclineBelow = round5(fairPrice*0.80)
-```
-
-**Spend math:** purchases[] {pricePaid, newRef, dateISO, category} → last30d sum; monthly buckets "YYYY-MM"; dynamic ranges (≥6mo→6M, ≥12→1Y, ≥60→5Y, always MAX); savedVsNew = Σ(newRef − pricePaid); K/M axis formatting.
-
-**Geo:** Haversine km; beta radius 25; default center Sudbury ON (46.4917, −80.9930); geolocation with deny-fallback + manual override.
-
-## 7. Likely bugs + mitigations
+## 4. Likely bugs + mitigations
 
 | Bug | Mitigation |
 |---|---|
-| localStorage schema drift breaks old saves | Versioned key `rebuy:v1`; migrate-or-reseed on version mismatch |
-| Geolocation denied / slow | 8s timeout → Sudbury fallback + persistent notice + manual override control |
-| Listings exactly at 25.0 km flicker in/out | Epsilon: include ≤ 25.05 km; distance shown rounded to 0.1 |
-| Canvas charts on HiDPI blur | Scale by devicePixelRatio |
-| Notification permission denied | Fall back to in-app toast + alerts inbox; never nag |
-| Photo file inputs with huge images | Downscale via canvas to ≤1200px, JPEG 0.8, before storing as data URL |
-| `$1` placeholder prices gaming sort | Validate: price ≥ $5 on post; flag existing $1 prices in seed (none) |
-| XSS via listing titles/descriptions | All user content rendered through escapeHtml; never innerHTML with raw input |
-| AudioContext autoplay policy | Create/resume context on first user gesture only |
-| Node tests vs browser globals | Engine modules are UMD (module.exports guard); no window/document references |
-| eBay API CORS blocked in browser | Try direct fetch; on CORS/network failure fall back to demo mode with honest notice ("Live eBay unreachable from this browser — showing demo results"). Documented, never a dead end |
-| eBay token endpoint failure / bad key | Catch, show inline Settings error ("Couldn't reach eBay — check your App ID and secret"), stay in demo mode |
-| eBay rate limits (5k calls/day free) | Debounce 400ms, 10-min result cache per query, one token per session |
-| eBay items lack year/newPrice | Relative deal-score path (vs result-set median); badge labeled honestly |
-| Secrets in localStorage | It's the user's own free eBay key on their own device; documented as such; never transmitted anywhere except api.ebay.com |
+| Chatbot panel covers the Compare tray / purchase buttons on 360px screens | Panel is a bottom sheet that sits above content but below modal layer; explicit overlap test in journeys; manual check at 360×740 |
+| Pollinations slow or unreachable → spinner hangs | 12s timeout; Tier 1 always works offline; failure message is plain text + quick chips, never an endless spinner |
+| Radius change doesn't re-run the search (stale results, wrong pill) | Selector dispatches through the same search path as typing; pill reads the live radius value; journey asserts pill text changes 25→50→10 |
+| Radius below 25 shows hardcoded "Beta: showing items within 25 km" | Badge text uses the live radius variable; grep after build for the hardcoded string |
+| Best Value hero picks a demo listing and reads like a live recommendation | Hero carries the same tier label as its source (Demo pill / "live" note) + plain-language reason; never shown above live results without the label |
+| Geolocation denied → app silently shows Sudbury as "near you" | Fallback keeps the honest label: "showing Sudbury-area listings", not "near you" |
+| Chatbot invents a listing, price, or city | System prompt forbids it; Tier-1 KB has no prices; model output is escaped and reviewed in QC; honesty rule: "I don't know — ask the seller / check Settings" |
+| Off-topic question gets a full AI answer (scope creep) | System prompt: one polite redirect sentence, no full conversations |
+| XSS via chatbot answers (model output rendered as HTML) | All answers through the escapeHtml path; never innerHTML with model text |
+| `frag-test.html` still reachable after removal | Delete from repo root, push, curl the live URL and confirm 404 before sign-off |
+| One-file pushes raced / a file didn't land | Verify every push with `get_file_contents`; Release Manager re-fetches the live page for the final smoke |
+| eBay secret lingers in the URL after `#ebay-setup` | Existing strip logic re-verified on live: after saving, the hash is removed from the address bar; keys only in localStorage |
+| Chatbot widget re-triggers sound.js | Sound stays off by default; chatbot has no audio, no exceptions |
 
-## 8. Non-goals (v1)
+---
 
-Real backend, accounts/login, real payments/escrow, in-app chat (offers are structured instead), photo AI (title/desc helpers are template-based), i18n, shipping flow (local meetup only).
+## 5. Timeline
 
-## 9. QA plan
+| Phase | What | Owner |
+|---|---|---|
+| 1 — Plan sign-off | This PLAN.md accepted; vision bar confirmed | Producer → all teams |
+| 2 — Build | Chatbot (`js/chatbot.js` + KB copy), radius selector + pill, hero reason line, `frag-test.html` deletion | UI/UX, Dev, Retention (copy) |
+| 3 — Integrate | Merge into one tree; token/palette check; conflict resolution in `ui.js`/`styles.css` | Integrator |
+| 4 — QC | Unit tests green, journeys extended and green, html-validate clean, axe-core in real browser, 360px manual pass | QC team |
+| 5 — Ship | One-file pushes, each verified; live smoke (search, chatbot, radius, `#ebay-setup`, zero console errors) | Release Manager |
+| 6 — Greenlight | Every team votes against the 9-point gate (§7 of VISION.md); unanimous or it doesn't ship | All |
 
-`node --check` every JS file; `node --test test/` — suites for deals (score tiers, boundaries, comp blending), geo (Haversine known distances, radius filter, epsilon), offers (suggestion math, auto accept/decline/counter), spend (bucketing, dynamic ranges, 30d sum, savings). Manual: no live browser here — DOM paths code-reviewed; smoke test recommended after Pages deploy.
-
-## 10. QA pass 2026-10-14 — wrong-link bug + 30 mock-customer journeys
-
-**Fixed: demo link-outs.** eBay demo items hardcoded `https://www.ebay.ca/` and Google demo items hardcoded domain homepages — clicking any external result opened a generic page. Demo URLs are now real searches: eBay → `ebay.ca/sch/i.html?_nkw=<query>&_sop=15` (price-lowest-first); Google → `google.com/search?q=site:<domain> <query>`. Live paths untouched. Unit tests assert the encoded query in every demo URL.
-
-**New: in-app message threads** (supersedes the "no in-app chat" non-goal). `Store.messages` + per-listing thread UI in the listing modal: buyer sends → deterministic keyword-matched seller auto-reply (~900ms, calm tone). Replaces the old copy-a-draft modal.
-
-**Found by the journeys, fixed:**
-- Search "laptop" returned zero native listings (titles say "ThinkPad", category "computers"). Added `CAT_ALIASES` in the Rebuy adapter (`Native.matches`): everyday words map to categories (laptop→computers, bicycle→bikes, …). Model searches stay strict.
-- Adapter `search()` could throw synchronously when `fetch` is unavailable; now always returns a promise that degrades to demo.
-
-**Harness:** `test-harness/` (gitignored) — `journeys.js` boots the real app in jsdom and drives 30 personas via DOM events. 30/30 PASS. Unit suite: 56/56 PASS (`node --test test/*.test.js`).
-
-**Not verifiable here:** real mobile device rendering, live eBay/Google keys, on-device geolocation, Notification permission UX, canvas pixel output (stubbed 2d context in harness).
-
-## 11. 2026-10-14 — second-hand search-engine positioning: 9 marketplaces, 3 honest tiers
-
-**Positioning:** Rebuy is now framed as a search engine for second-hand articles across every major marketplace — not an eBay sidecar. External zone restructured into three honest tiers:
-
-1. **eBay** — structured live listings with real prices (labeled "eBay · live prices" when live; demo otherwise). First in the external zone because real prices feed deal scores.
-2. **"Across the second-hand web"** — Google Programmable Search results **grouped by marketplace**: a sub-header per source (calm dot + name + count, e.g. "Kijiji · 3"), groups ordered by result count desc. Works in live and demo modes.
-3. **"Search directly on"** — a chip row with all nine deep-link marketplaces (Kijiji, Facebook Marketplace, Craigslist, OfferUp, Gumtree, Mercari, Depop, Poshmark, VarageSale); each chip opens that marketplace's own search for the query in a new tab. Kept the honest note: "Some marketplaces don't offer public APIs, so we send you to their own search instead of pretending."
-
-**New deep links (all 5 URL patterns verified live 2026-10-14 with a "thinkpad" test query):** Gumtree (`/search?q=`, 200 + "search results" markers), Depop (`/search/?q=`, 200 + markers), Poshmark (`/search?query=`, 200 + query echoed), Mercari (`/search/?keyword=` — Mercari's genuine search URL; automated fetches hit their bot-wall captcha, pattern shipped as documented), VarageSale (`/search?q=` — 200, SPA shell reads the q param client-side; community search needs sign-in, so the global search route is linked honestly).
-
-**Removed:** the disabled "coming soon" chips in the source filter row — misleading now that every marketplace is covered via deep links.
-
-**Demo breadth:** Google demo results now sample from all nine marketplaces (6–9 items per search); VarageSale added to `DOMAIN_LABELS`.
-
-**Tests:** `groupByMarketplace` (correct headers, count-desc ordering, empty→[]), every deep link carries the encoded multi-word query (OfferUp homepage is the honest exception), demo sampling breadth. Unit suite: 59/59 PASS. Harness: 30/30 PASS after updating journeys 09/11/12/13 to the new UI.
-
-**Still honest:** tier-3 deep links never pretend to be live inventory; demo modes stay clearly labeled; no marketplace's private inventory is claimed.
-
-## 12. 2026-10-14 — shopping-card grid redesign (Google-Shopping pattern, calm theme)
-
-**User direction:** a hand-drawn wireframe (saved as `docs/reference-shopping-layout.png`) showing search bar → main product area + right sidebar of sellers from every marketplace at different prices, plus the Google Shopping card pattern: image, retailer row, title, stars, BIG price.
-
-**What changed:** every listing card in the app is now a vertical shopping card —
-image (4:3, contain, calm placeholder letter behind; broken photos remove themselves)
-→ marketplace row (calm dot + name: "On Rebuy", "Kijiji", "eBay"…) → title (2-line clamp)
-→ star rating → BIG bold ink price + condition pill → Deal Score badge → distance line.
-Grids: `repeat(auto-fill, minmax(230px, 1fr))`, 2 columns at phone widths. The old
-horizontal `.card` and `.ext-row` mini-rows are gone; external results (eBay tier,
-marketplace groups, focused views) all render as cards now. The two-zone layout
-(main results + sticky "Also listed on" sidebar) is unchanged — it already matched
-the wireframe.
-
-**Ratings (never faked):** eBay `seller.feedbackPercentage` → stars + "98% positive";
-native seller rating (0–5) → stars; web results with no rating data omit the row.
-Stars are `role="img"` with an "X out of 5 stars" label; prices use semantic `<data>`.
-
-**Honest labels kept:** demo cards carry a small "Demo" pill (the reference's
-"Annonce" position); live cards get no pill. Price stays dark ink, never red.
-
-**Detail view** carries the same DNA: marketplace row above the title, big ink price,
-star row in the seller card. Compare tray/table, haggle modal, messaging, sell form,
-Spend, Settings functionally untouched.
-
-**Tests:** new journey 31 ("shopping-card anatomy") asserts marketplace row, accessible
-stars, semantic price, condition pill, distance line, image alt text, demo pill,
-outbound external links, eBay feedback stars, and detail-view DNA. Unit suite:
-59/59 PASS. Harness: 31/31 PASS (journeys 01/02/04–07/10/23/28 selectors updated to
-the new `.shop-*` DOM).
-
-**Not verifiable here:** real-device rendering at 390px (CSS reviewed against the
-≤600px breakpoint; tap targets ≥44px in card actions), live eBay/Google modes
-(keys still pending), canvas pixel output.
-
-## §12 — Tool-powered polish pass (2026-10-14)
-
-**Icons:** every text-symbol icon replaced with inlined Lucide SVGs — `js/icons.js`
-(1.7KB, 6 icons: star, badge-check, arrow-up-right, arrow-left, circle-check,
-circle; the 454KB UMD is NOT shipped). ★/☆ → crisp SVG stars, ✓ → badge-check,
-→/← → arrow icons, ○/✓ status → circle icons. Sort labels now buyer-language
-("Price: low to high") per the card-patterns playbook.
-
-**Tokens:** `vendor/open-props.min.css` vendored (MIT); structural values now ride
-tokens — 18× `999px` pill radii → `var(--radius-round)`, radii/shadows →
-`--radius-3`/`--shadow-2/3` with `--shadow-color` set to Rebuy's terracotta so the
-warm tint survives. Palette values untouched.
-
-**Cards (micro):** skeleton shimmer loading states (no layout shift — same grid
-rhythm as results), subtle image zoom on card hover, `transition: all` replaced
-with explicit properties, chip touch targets enlarged (~40px).
-
-**A11y:** html-validate clean (fixed: duplicate nav landmark names, missing button
-types, 5 unassociated filter labels → `for`/`id`). Contrast: `--ink-faint`
-darkened #8a8378→#6E6759 (3.6:1→5.4:1) and deal-tag.over text → ink (2.25:1→6.7:1).
-Modal now traps Tab focus and returns focus to its trigger on close. Global
-`:focus-visible` clay ring. axe-core in-browser run still needs a real browser
-(hand to parent).
-
-**Tests:** unit 59/59 PASS, journeys 31/31 PASS, `node --check` clean.
+**Standing rules for the pass:** one-file pushes via the GitHub connector; human-made copy everywhere (read it aloud — if it sounds like a model, rewrite); nothing is shown to the user until every crew member gives their green light.
