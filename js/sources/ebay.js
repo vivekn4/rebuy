@@ -9,7 +9,10 @@
 
   var TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token";
   var API = "https://api.ebay.com/buy/browse/v1";
-  var SCOPE = "https://api.ebay.com/oauth/api_scope/buy.browse";
+  var SCOPE = "https://api.ebay.com/oauth/api_scope"; // base app scope for the
+  // client-credentials grant (verified 2026-10-15: requesting
+  // api_scope/buy.browse here returns invalid_scope; the base scope is what
+  // authorizes Browse API application tokens)
   var KEY_KEY = "rebuy:ebay_keys";   // {clientId, clientSecret, marketplace}
   var TOKEN_KEY = "rebuy:ebay_token"; // {token, expiresAt}
 
