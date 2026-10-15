@@ -199,7 +199,7 @@
       ["ThinkPad T480", "iPhone 12", "Trek bike", "PS5", "standing desk"].map(function (q) {
         return '<button type="button" data-q="' + esc(q) + '">' + esc(q) + "</button>";
       }).join(" · ") + "</p>" +
-      '<p class="hero-note"><span class="beta-badge">Beta</span><br>Showing items within 25 km of <strong>' + esc(S.center.label) + "</strong>. " +
+      '<p class="hero-note"><span class="beta-badge">Beta</span><br>Showing items within ' + G.getRadiusKm() + " km of <strong>" + esc(S.center.label) + "</strong>. " +
       "Rebuy never takes a cut — you pay the seller in person.</p>" +
       "</section></div>";
 
@@ -240,8 +240,15 @@
       maxPrice: f.max, minPrice: f.min,
       condition: f.cond, sort: f.sort,
       category: f.cat, currency: "CAD",
-      center: S.center, radiusKm: G.BETA_KM
+      center: S.center, radiusKm: G.getRadiusKm()
     };
+  }
+
+  // Honest location pill: always reads "Within {km} km of {label}" from live
+  // state — never a hardcoded string.
+  function paintPill() {
+    var pill = document.getElementById("locationLabel");
+    if (pill) pill.textContent = "Within " + G.getRadiusKm() + " km of " + S.center.label;
   }
 
   // ---------- shopping cards (Google-Shopping pattern, calm theme) ----------
@@ -358,8 +365,13 @@
     var chips = [["all", "All"], ["rebuy", "On Rebuy"], ["ebay", "eBay"], ["web", "Second-hand web"]];
     view.innerHTML =
       '<section class="results-head"><h1 class="serif">Results for “' + esc(f.q || "everything nearby") + "”</h1>" +
-      '<p class="results-meta" id="resultsMeta">Gathering listings…</p></section>' +
+      '<p class="results-meta" id="resultsMeta">Gathering listings…</p>' +
+      '<p><button class="btn btn-soft btn-sm" id="alertMeBtn" type="button">Get alerts for this search</button></p></section>' +
       '<div class="filter-bar" id="filterBar">' +
+      '<div class="f"><label for="fRad">Radius</label><select id="fRad">' +
+      G.RADII.map(function (r) {
+        return '<option value="' + r + '"' + (G.getRadiusKm() === r ? " selected" : "") + ">" + r + " km</option>";
+      }).join("") + "</select></div>" +
       '<div class="f"><label for="fCat">Category</label><select id="fCat"><option value="any">All</option>' +
       CATS.map(function (c) { return '<option value="' + c + '"' + (f.cat === c ? " selected" : "") + ">" + esc(c) + "</option>"; }).join("") + "</select></div>" +
       '<div class="f f-narrow"><label for="fMin">Min $</label><input type="number" id="fMin" min="0" value="' + (f.min == null ? "" : f.min) + '" placeholder="0"></div>' +
@@ -393,6 +405,26 @@
       $("#" + id).addEventListener("change", function () { f.cat = $("#fCat").value; f.cond = $("#fCond").value; f.sort = $("#fSort").value; pushHash(); });
     });
     $("#fSudbury").addEventListener("change", function () { f.sudbury = $("#fSudbury").checked; pushHash(); });
+    // Radius is global device state: changing it updates the pill and re-runs
+    // the current search with the new radius.
+    $("#fRad").addEventListener("change", function () {
+      G.setRadiusKm(+$("#fRad").value);
+      paintPill();
+      Sound.toggle(true);
+      toast("Searching within " + G.getRadiusKm() + " km of " + S.center.label + ".", "");
+      route();
+    });
+    // One-tap alert: the #1 retention driver, impossible to miss.
+    $("#alertMeBtn").addEventListener("click", function () {
+      var dup = Store.alerts().some(function (a) {
+        return (a.query || "") === (f.q || "") && JSON.stringify(a.filters || {}) === JSON.stringify(f);
+      });
+      if (!dup) Store.addAlert({ query: f.q, filters: f });
+      var dot = document.getElementById("alertsDot");
+      if (dot) dot.hidden = false;
+      Sound.success();
+      toast(dup ? "Already watching this search." : "Alert saved — we'll ping you when it shows up.", "success");
+    });
     ["fMin", "fMax"].forEach(function (id) {
       $("#" + id).addEventListener("input", function () {
         clearTimeout(deb);
@@ -428,6 +460,18 @@
         S.cache[it.id] = it;
       });
       var ebayItems = ebay.items || [], gseItems = gse.items || [];
+      // Adapters filter prices unevenly (web results ignore the band), so
+      // enforce the user's price band here — the Best Value hero must never
+      // violate an explicit filter. Priceless items ("Price on site") stay:
+      // we can't prove they're out of band.
+      var priceOK = function (it) {
+        if (f.min != null && it.price > 0 && it.price < f.min) return false;
+        if (f.max != null && it.price > 0 && it.price > f.max) return false;
+        return true;
+      };
+      native = native.filter(priceOK);
+      ebayItems = ebayItems.filter(priceOK);
+      gseItems = gseItems.filter(priceOK);
       // Sudbury-area only: keep eBay listings with a Greater Sudbury (P3) postal
       // code. Native Rebuy listings are already 25 km-filtered around the center.
       var ebayWidened = false, ebayHad = ebayItems.length;
@@ -461,8 +505,8 @@
         (gse.quota ? " (paused — quota)" : gse.mode === "demo" ? " (demo)" : " (live)");
       $("#resultsMeta").textContent = meta;
 
-      renderMainZone(f, native, best);
-      renderSidePanel(f, { ebay: ebay, ebayItems: ebayItems, gse: gse, gseItems: gseItems, ebayWidened: ebayWidened, sudbury: f.sudbury });
+      renderMainZone(f, native, best, med);
+      renderSidePanel(f, { ebay: ebay, ebayItems: ebayItems, gse: gse, gseItems: gseItems, ebayWidened: ebayWidened, sudbury: f.sudbury, best: best, med: med });
       wireCompareBoxes(view);
       renderTray();
     }).catch(function (err) {
@@ -471,32 +515,45 @@
   }
 
   // Featured "Best value" hero: the single best deal score across all sources.
-  function bestValueHTML(it) {
+  // Carries a plain-language reason line and honest source/demo labeling.
+  function bestValueHTML(it, ref) {
     var isNative = it.source === "rebuy";
     var url = isNative ? "#/listing/" + esc(it.id) : (it.url || "#");
     var label = isNative ? "On Rebuy" : (it.source === "ebay" ? "eBay" : (it.sourceLabel || "Web"));
     var tab = isNative ? "" : ' target="_blank" rel="noopener"';
+    var reason = bestValueReason(it, ref);
     return '<section class="best-value" aria-label="Best value pick">' +
-      '<div class="bv-badge">' + IC.icon("badge-check", 15) + " Best value</div>" +
+      '<div class="bv-badge">' + IC.icon("badge-check", 15) + " Best value" + demoPill(it) + "</div>" +
       shopMediaHTML(it, url, !isNative, label.charAt(0).toUpperCase()) +
       '<div class="shop-body">' +
       mktRowHTML(label) +
       '<h3 class="shop-title"><a href="' + url + '"' + tab + ">" + esc(it.title) + "</a></h3>" +
       priceRowHTML(it) +
       (it._tier ? '<div class="shop-badges">' + dealBadge(it) + "</div>" : "") +
+      (reason ? '<p class="bv-reason">' + esc(reason) + "</p>" : "") +
       '<div class="shop-actions"><a class="btn btn-primary btn-sm" href="' + url + '"' + tab + ">" +
       (isNative ? "View listing" : "View on " + esc(label)) + "</a>" +
       compareCheckHTML(it) + "</div></div></section>";
   }
+  // Plain-language "why this pick" — derived from real numbers only. Never
+  // claims a saving it can't compute (price missing, no reference).
+  function bestValueReason(it, ref) {
+    if (!it.price || it.price <= 0 || !ref || ref <= 0) return "";
+    var diff = Math.round(ref - it.price);
+    if (diff <= 0)
+      return "The strongest pick of what's around — " + it._tier.label.toLowerCase() + " at this price.";
+    var basis = it._basis === "absolute" ? "fair market value" : "the going rate";
+    return "$" + diff.toLocaleString("en-CA") + " below " + basis + (it.condition ? " for this condition" : "") + ".";
+  }
 
-  function renderMainZone(f, native, best) {
+  function renderMainZone(f, native, best, med) {
     var showMain = f.src === "all" || f.src === "rebuy";
     var mz = $("#mainZone");
     if (!showMain) { mz.innerHTML = ""; return; }
-    var html = (best ? bestValueHTML(best) : "") +
+    var html = (best ? bestValueHTML(best, best._fair || med) : "") +
       '<div class="zone-title"><h2 class="serif">On Rebuy</h2>' +
       '<span class="count">' + native.length + ' nearby</span></div>' +
-      '<p><span class="beta-badge">Beta: showing items within 25 km</span></p>' +
+      '<p><span class="beta-badge">Beta: showing items within ' + G.getRadiusKm() + ' km</span></p>' +
       (native.length ? '<div class="cards">' + native.map(cardHTML).join("") + "</div>"
         : '<div class="empty"><p class="serif">Nothing on Rebuy matches — yet.</p>' +
           '<p>Check “Also listed on” beside, or <a href="#/sell">be the first to list it</a>.</p></div>');
@@ -584,10 +641,13 @@
       var items = f.src === "ebay" ? R.ebayItems : R.gseItems;
       var r = f.src === "ebay" ? R.ebay : R.gse;
       var isLiveEbay = f.src === "ebay" && r.mode === "live" && !r.quota;
+      // The best-value pick was lifted out of the lists above — keep it
+      // visible here instead of vanishing in focused views.
+      var focusHero = (R.best && R.best.source === f.src) ? bestValueHTML(R.best, R.best._fair || R.med) : "";
       mz.innerHTML = '<div class="zone-title"><h2 class="serif">' +
         (f.src === "ebay" ? (isLiveEbay ? "eBay · live prices" : "eBay") : "Across the second-hand web") +
         '</h2><span class="count">' + items.length + "</span></div>" +
-        modeNote(r, "add your free key in Settings") +
+        modeNote(r, "add your free key in Settings") + focusHero +
         (items.length
           ? (f.src === "web" ? webGroupsHTML(items) : '<div class="cards">' + items.map(extCardHTML).join("") + "</div>")
           : '<div class="empty"><p class="serif">No matches here.</p></div>') +
@@ -1060,7 +1120,7 @@
         '<div class="panel"><h3 class="serif">Save your last search</h3>' +
         '<p>“' + esc(S.lastSearch.query) + '”' +
         (S.lastSearch.filters.cat !== "any" ? " · " + esc(S.lastSearch.filters.cat) : "") +
-        (S.lastSearch.filters.max ? " · under " + money(S.lastSearch.filters.max) : "") + " · within 25 km</p>" +
+        (S.lastSearch.filters.max ? " · under " + money(S.lastSearch.filters.max) : "") + " · within " + G.getRadiusKm() + " km</p>" +
         '<button class="btn btn-primary" id="saveSearchBtn">Save this search</button></div>' : "") +
       '<div class="panel"><h3 class="serif">Your alerts (' + alerts.length + ")</h3>" +
       (alerts.length ? alerts.map(function (a) {
@@ -1142,8 +1202,12 @@
       '<p class="status-line ' + (gseOn ? "ok" : "off") + '">' + IC.icon(gseOn ? "circle-check" : "circle", 14) + " " + (gseOn ? "Live Google key saved — web results are real." : "Demo mode — add your free key for live web results.") + "</p></div>" +
 
       '<div class="panel key-card"><h3 class="serif">Location</h3>' +
-      '<p class="hint">Currently searching within 25 km of <strong>' + esc(S.center.label) + '</strong> (' + S.center.source + ").</p>" +
-      '<div class="key-row"><label class="field"><span>Latitude</span><input type="number" step="any" id="locLat" value="' + S.center.lat + '"></label>' +
+      '<p class="hint">Currently searching within ' + G.getRadiusKm() + ' km of <strong>' + esc(S.center.label) + '</strong> (' + S.center.source + "). Rebuy is Sudbury-only for now — the pill always shows your real search area.</p>" +
+      '<div class="key-row"><label class="field"><span>Search radius</span><select id="locRadius">' +
+      G.RADII.map(function (r) {
+        return '<option value="' + r + '"' + (G.getRadiusKm() === r ? " selected" : "") + ">" + r + " km</option>";
+      }).join("") + "</select></label>" +
+      '<label class="field"><span>Latitude</span><input type="number" step="any" id="locLat" value="' + S.center.lat + '"></label>' +
       '<label class="field"><span>Longitude</span><input type="number" step="any" id="locLng" value="' + S.center.lng + '"></label></div>' +
       '<label class="field"><span>Label</span><input type="text" id="locLabel" value="' + esc(S.center.label) + '"></label>' +
       '<button class="btn btn-soft btn-sm" id="locGps">Use my location</button> ' +
@@ -1173,11 +1237,16 @@
     });
     $("#gseClear").addEventListener("click", function () { GSE.clearKeys(); Sound.toggle(false); route(); });
     $("#locGps").addEventListener("click", function () {
-      G.locate(function (c) { setCenter(c); Sound.success(); toast("Location updated: " + c.label + ".", "success"); }, 8000);
+      G.locate(function (c) { applyLocated(c); Sound.success(); }, 8000);
     });
     $("#locSudbury").addEventListener("click", function () {
       setCenter({ lat: G.SUDBURY.lat, lng: G.SUDBURY.lng, label: "Sudbury, ON", source: "default" });
       Sound.toggle(true); route();
+    });
+    $("#locRadius").addEventListener("change", function () {
+      G.setRadiusKm(+$("#locRadius").value);
+      paintPill();
+      Sound.toggle(true); toast("Search radius: " + G.getRadiusKm() + " km.", "success"); route();
     });
     $("#locSave").addEventListener("click", function () {
       setCenter({ lat: +$("#locLat").value || G.SUDBURY.lat, lng: +$("#locLng").value || G.SUDBURY.lng, label: $("#locLabel").value.trim() || "Custom", source: "manual" });
@@ -1196,8 +1265,7 @@
   function setCenter(c) {
     S.center = { lat: c.lat, lng: c.lng, label: c.label, source: c.source };
     try { localStorage.setItem("rebuy:center", JSON.stringify(S.center)); } catch (e) {}
-    var pill = document.getElementById("locationLabel");
-    if (pill) pill.textContent = c.label;
+    paintPill();
   }
 
   function syncMuteIcon() {
@@ -1207,23 +1275,37 @@
     document.getElementById("muteBtn").setAttribute("aria-pressed", String(!muted));
   }
 
+  // Rebuy only covers the Sudbury area: a GPS fix far from Sudbury gets an
+  // honest label ("showing Sudbury-area listings"), never a fake "near you".
+  function applyLocated(c) {
+    if (c.source === "gps" && G.haversineKm(c.lat, c.lng, G.SUDBURY.lat, G.SUDBURY.lng) > 150) {
+      setCenter({ lat: G.SUDBURY.lat, lng: G.SUDBURY.lng, label: "Sudbury, ON", source: "fallback" });
+      toast("Rebuy is in beta around Sudbury, ON — showing Sudbury-area listings.", "");
+    } else {
+      setCenter(c);
+    }
+  }
+
   // ---------- boot ----------
   function boot() {
     try {
       var saved = JSON.parse(localStorage.getItem("rebuy:center") || "null");
       if (saved && saved.lat != null) {
         S.center = saved;
-        document.getElementById("locationLabel").textContent = saved.label;
       }
     } catch (e) {}
+    paintPill();
     // seed once
     if (!Store.all().seededAt) {
       Store.reset(function (d) { var s = Seed.build(); d.listings = s.listings; d.seededAt = s.seededAt; });
     }
-    // gentle geolocation upgrade (never blocks)
+    // gentle geolocation upgrade (never blocks). Off-Sudbury positions keep
+    // the honest Sudbury fallback — see applyLocated above.
     if (!localStorage.getItem("rebuy:center")) {
-      G.locate(function (c) { setCenter(c); }, 8000);
+      G.locate(applyLocated, 8000);
     }
+    // FAQ chatbot widget (two-tier: instant local KB, free Pollinations AI).
+    try { if (root.RebuyChatbot) root.RebuyChatbot.mount(); } catch (e) {}
     // header mute
     syncMuteIcon();
     document.getElementById("muteBtn").addEventListener("click", function () {
