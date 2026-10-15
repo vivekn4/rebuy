@@ -9,7 +9,10 @@
     "arrow-up-right": "<path d=\"M7 7h10v10\"/><path d=\"M7 17 17 7\"/>",
     "arrow-left": "<path d=\"m12 19-7-7 7-7\"/><path d=\"M19 12H5\"/>",
     "circle-check": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"m16 9-5.5 5.5L8 12\"/>",
-    "circle": "<circle cx=\"12\" cy=\"12\" r=\"10\"/>"
+    "circle": "<circle cx=\"12\" cy=\"12\" r=\"10\"/>",
+    "message-circle": "<path d=\"M7.9 20A9 9 0 1 0 4 16.1L2 22Z\"/>",
+    "x": "<path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/>",
+    "send": "<path d=\"m22 2-7 20-4-9-9-4Z\"/><path d=\"M22 2 11 13\"/>"
   };
 
   // icon(name, size, filled) -> inline SVG string.
