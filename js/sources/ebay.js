@@ -13,12 +13,24 @@
   var KEY_KEY = "rebuy:ebay_keys";   // {clientId, clientSecret, marketplace}
   var TOKEN_KEY = "rebuy:ebay_token"; // {token, expiresAt}
 
+  // Pre-configured public client ID for the Rebuy production keyset (created
+  // 2026-10-15). The App ID / client ID is a public identifier — safe to ship;
+  // the Cert ID (client secret) is never stored here and lives only on the
+  // user's own device (localStorage) once connected.
+  var DEFAULT_CLIENT_ID = "VivekNai-Rebuy-PRD-81d2ad8ad-27635e5b";
+
   function lsGet(k) { try { return typeof localStorage !== "undefined" ? localStorage.getItem(k) : null; } catch (e) { return null; } }
   function lsSet(k, v) { try { if (typeof localStorage !== "undefined") localStorage.setItem(k, v); } catch (e) {} }
   function lsDel(k) { try { if (typeof localStorage !== "undefined") localStorage.removeItem(k); } catch (e) {} }
 
   function getKeys() {
-    try { return JSON.parse(lsGet(KEY_KEY) || "null"); } catch (e) { return null; }
+    try {
+      var k = JSON.parse(lsGet(KEY_KEY) || "null");
+      if (k && k.clientId) return k;
+    } catch (e) {}
+    // App ID pre-configured; Cert ID still needed from the user (one-tap setup
+    // link or Settings) before live mode activates.
+    return { clientId: DEFAULT_CLIENT_ID, clientSecret: "", marketplace: "EBAY_CA" };
   }
   function saveKeys(clientId, clientSecret, marketplace) {
     lsSet(KEY_KEY, JSON.stringify({ clientId: clientId, clientSecret: clientSecret, marketplace: marketplace || "EBAY_CA" }));
@@ -27,6 +39,28 @@
   function clearKeys() { lsDel(KEY_KEY); lsDel(TOKEN_KEY); }
   function hasKeys() { var k = getKeys(); return !!(k && k.clientId && k.clientSecret); }
   function marketplace() { var k = getKeys(); return (k && k.marketplace) || "EBAY_CA"; }
+
+  // One-tap setup: a link like <site>/#ebay-setup=<base64url JSON> carries
+  // {clientId, clientSecret, marketplace}. On boot we save it to this device's
+  // localStorage and strip it from the URL immediately (history.replaceState —
+  // the secret never hits the network in the fragment). Returns true when a
+  // setup payload was consumed.
+  function consumeSetupFragment() {
+    try {
+      if (typeof location === "undefined" || !location.hash) return false;
+      var m = /^#ebay-setup=([A-Za-z0-9\-_]+=*)$/.exec(location.hash);
+      if (!m) return false;
+      var b64 = m[1].replace(/-/g, "+").replace(/_/g, "/");
+      var json = (typeof atob !== "undefined" ? atob : function (s) { return Buffer.from(s, "base64").toString("utf8"); })(b64);
+      var o = JSON.parse(json);
+      if (o && o.clientId && o.clientSecret) {
+        saveKeys(o.clientId, o.clientSecret, o.marketplace || "EBAY_CA");
+        if (history && history.replaceState) history.replaceState(null, "", location.pathname + location.search);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
 
   function isTokenFresh(cached, nowMs) {
     return !!(cached && cached.token && cached.expiresAt && cached.expiresAt > (nowMs || Date.now()));
@@ -212,6 +246,7 @@
     normalizeItem: normalizeItem, mapCondition: mapCondition,
     demoResults: demoResults, demoSearchUrl: demoSearchUrl, buildSearchUrl: buildSearchUrl,
     isTokenFresh: isTokenFresh, getKeys: getKeys, saveKeys: saveKeys,
-    clearKeys: clearKeys, hasKeys: hasKeys, marketplace: marketplace, hashStr: hashStr
+    clearKeys: clearKeys, hasKeys: hasKeys, marketplace: marketplace, hashStr: hashStr,
+    consumeSetupFragment: consumeSetupFragment, defaultClientId: DEFAULT_CLIENT_ID
   };
 });

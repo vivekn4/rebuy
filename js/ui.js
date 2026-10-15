@@ -1073,7 +1073,7 @@
       '<p class="results-meta">Everything works in demo mode. Keys unlock live data — free, no card, stored only on this device.</p></section>' +
 
       '<div class="panel key-card"><h3 class="serif">eBay API key</h3>' +
-      '<p class="hint">Free at <strong>developer.ebay.com</strong> → create an app → copy the App ID (client ID) and Cert ID (secret). No card needed. Unlocks <strong>live eBay results</strong> in “Also listed on”.</p>' +
+      '<p class="hint">Your App ID is pre-filled below — just add the Cert ID (client secret) from <strong>developer.ebay.com → Application Keys</strong>. Free, no card. Unlocks <strong>live eBay results</strong> in “Also listed on”. Keys stay on this device only.</p>' +
       '<div class="key-row"><label class="field"><span>App ID (client ID)</span><input type="text" id="ebayId" value="' + esc((ek && ek.clientId) || "") + '" autocomplete="off"></label>' +
       '<label class="field"><span>Cert ID (client secret)</span><input type="text" id="ebaySecret" value="' + esc((ek && ek.clientSecret) || "") + '" autocomplete="off"></label></div>' +
       '<label class="field"><span>Marketplace</span><select id="ebayMkt"><option value="EBAY_CA"' + ((ek && ek.marketplace) !== "EBAY_US" ? " selected" : "") + '>Canada (EBAY_CA)</option>' +
@@ -1191,6 +1191,10 @@
     }
     renderTray();
     window.addEventListener("hashchange", route);
+    // one-tap eBay setup link: save keys, strip the secret from the URL, confirm
+    try {
+      if (Ebay.consumeSetupFragment()) toast("eBay connected — live listings on.", "");
+    } catch (e) {}
     route();
   }
 
