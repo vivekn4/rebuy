@@ -587,6 +587,9 @@ canvas.chart { width: 100%; display: block; }
   /* bottom tab bar takes over navigation on phones */
   .mobile-tabs { display: flex; }
   body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  /* fixed-bottom layers must park ABOVE the tab bar, not under it */
+  .compare-tray { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  .toast-region { bottom: calc(64px + 1.2rem + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
@@ -703,6 +706,13 @@ body.chat-above-tray .chat-bubble { bottom: 5.4rem; }
   text-decoration: none; cursor: pointer;
 }
 .location-pill:hover { border-color: var(--clay); color: var(--clay-deep); }
+/* Narrow phones: the full "Within 25 km of Sudbury, ON" label would truncate
+   mid-word, so swap in the compact form. */
+.pill-short { display: none; }
+@media (max-width: 560px) {
+  .pill-full { display: none; }
+  .pill-short { display: inline; }
+}
 .bv-reason {
   font-size: .9rem; color: var(--sage-deep); font-weight: 600; margin: .35rem 0 .1rem;
 }
