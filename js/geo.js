@@ -7,6 +7,8 @@
 
   var SUDBURY = { lat: 46.4917, lng: -80.9930, label: "Sudbury, ON" };
   var BETA_KM = 25;
+  var RADII = [10, 25, 50, 100]; // selectable search radii (km)
+  var RADIUS_KEY = "rebuy:radius";
   var EPS = 0.05;
 
   function toRad(d) { return d * Math.PI / 180; }
@@ -57,8 +59,24 @@
   }
 
   return {
-    SUDBURY: SUDBURY, BETA_KM: BETA_KM,
+    SUDBURY: SUDBURY, BETA_KM: BETA_KM, RADII: RADII,
+    getRadiusKm: getRadiusKm, setRadiusKm: setRadiusKm,
     haversineKm: haversineKm, withinRadius: withinRadius,
     withDistances: withDistances, inBetaZone: inBetaZone, locate: locate
   };
+
+  // Radius persisted on the device; always one of RADII, defaults to 25.
+  function getRadiusKm() {
+    try {
+      var v = +((typeof localStorage !== "undefined") ? localStorage.getItem(RADIUS_KEY) : null);
+      if (RADII.indexOf(v) >= 0) return v;
+    } catch (e) {}
+    return BETA_KM;
+  }
+  function setRadiusKm(km) {
+    km = +km;
+    var v = RADII.indexOf(km) >= 0 ? km : BETA_KM;
+    try { if (typeof localStorage !== "undefined") localStorage.setItem(RADIUS_KEY, String(v)); } catch (e) {}
+    return v;
+  }
 });
