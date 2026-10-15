@@ -10,7 +10,9 @@
       Sound = root.RebuySound, Charts = root.RebuyCharts,
       Src = root.RebuySources, Ebay = root.RebuyEbay, GSE = root.RebuyGSE,
       DL = root.RebuyDeepLinks, Native = root.RebuyNative,
-      IC = root.RebuyIcons;
+      // icons.js is a static script loaded before us; the stub keeps a 404
+      // or CDN hiccup from killing the whole UI (icons just go blank).
+      IC = root.RebuyIcons || { icon: function () { return ""; } };
 
   // ---------- state ----------
   var S = {
@@ -608,6 +610,14 @@
     var showEbay = f.src === "all" || f.src === "ebay";
     var showWeb = f.src === "all" || f.src === "web";
     var html = "<h2 class=\"serif\">Also listed on</h2>";
+    // Graceful widen-out: when the Sudbury-area filter ate every eBay result,
+    // offer one tap to see all Canadian listings for the same search.
+    var widenHash = "#/search?q=" + encodeURIComponent(q) + "&cat=any&cond=any&sort=deal&src=" +
+      (f.src === "all" ? "all" : "ebay") + "&sudbury=0";
+    function widenEmptyHTML() {
+      return '<div class="empty"><p class="serif">No Sudbury-area eBay listings for this search.</p>' +
+        '<p><a class="btn btn-soft btn-sm" href="' + widenHash + '">Show all Canadian results</a></p></div>';
+    }
 
     if (f.src === "rebuy") { sp.innerHTML = html + '<p class="hint">Showing only Rebuy listings. Switch the source filter to compare elsewhere.</p>'; return; }
 
@@ -620,10 +630,7 @@
       if (R.ebayItems.length) {
         html += '<div class="cards">' + R.ebayItems.map(extCardHTML).join("") + "</div>";
       } else if (R.ebayWidened) {
-        var widenHash = "#/search?q=" + encodeURIComponent(q) + "&cat=any&cond=any&sort=deal&src=" +
-          (f.src === "all" ? "all" : "ebay") + "&sudbury=0";
-        html += '<div class="empty"><p class="serif">No Sudbury-area eBay listings for this search.</p>' +
-          '<p><a class="btn btn-soft btn-sm" href="' + widenHash + '">Show all Canadian results</a></p></div>';
+        html += widenEmptyHTML();
       } else {
         html += '<p class="hint">No eBay matches for this search.</p>';
       }
@@ -654,7 +661,8 @@
         modeNote(r, "add your free key in Settings") + focusHero +
         (items.length
           ? (f.src === "web" ? webGroupsHTML(items) : '<div class="cards">' + items.map(extCardHTML).join("") + "</div>")
-          : '<div class="empty"><p class="serif">No matches here.</p></div>') +
+          : (f.src === "ebay" && R.ebayWidened ? widenEmptyHTML()
+            : '<div class="empty"><p class="serif">No matches here.</p></div>')) +
         (f.src === "web" ? '<div class="tier-label">Search directly on</div>' +
           deepLinkChipsHTML(q) + '<p class="honest-note">' + esc(DL.HONEST_NOTE) + "</p>" : "");
       sp.innerHTML = "<h2 class=\"serif\">Also listed on</h2><p class=\"hint\">Focused view — switch the source filter back to “All” to compare all sources at once.</p>";
