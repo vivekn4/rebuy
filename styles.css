@@ -590,6 +590,9 @@ canvas.chart { width: 100%; display: block; }
   /* fixed-bottom layers must park ABOVE the tab bar, not under it */
   .compare-tray { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   .toast-region { bottom: calc(64px + 1.2rem + env(safe-area-inset-bottom, 0px)); }
+  .chat-bubble { bottom: calc(64px + 1.1rem + env(safe-area-inset-bottom, 0px)); }
+  .chat-panel { bottom: calc(64px + 4.9rem + env(safe-area-inset-bottom, 0px)); }
+  body.chat-above-tray .chat-bubble { bottom: calc(64px + 5.4rem + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
