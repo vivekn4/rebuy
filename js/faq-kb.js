@@ -44,7 +44,7 @@
       id: "live-ebay",
       keys: ["ebay", "live", "setup", "one-tap", "key", "thumbnails", "photos", "real listings", "turn on"],
       title: "Turn on live eBay results",
-      body: "Use the one-tap setup link (#ebay-setup) — it saves your free eBay key on your phone and switches results to live listings with real product photos. The secret is stripped from the address bar right after, and your key never leaves your device. You can check the status any time under Settings."
+      body: "Open #/settings and tap the one-tap eBay setup link — it saves your free eBay key on your phone and switches results to live listings with real product photos. The secret is stripped from the address bar right after, and your key never leaves your device. You can check the status any time under Settings."
     },
     {
       id: "alerts",
