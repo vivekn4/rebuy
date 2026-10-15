@@ -82,3 +82,31 @@ t("adapter registry + sortListings", () => {
   assert.equal(A.sortListings(items, "deal")[0].price, 200);
   assert.equal(A.sortListings(items, "price-asc")[0].price, 200);
 });
+
+t("demoResults: link-outs are real eBay product searches, not the homepage", () => {
+  const items = E.demoResults("ThinkPad T480");
+  const expected = encodeURIComponent("ThinkPad T480");
+  assert.ok(items.length > 0);
+  items.forEach(x => {
+    assert.ok(x.url.startsWith("https://www.ebay.ca/sch/i.html?"), x.url);
+    assert.ok(x.url.includes("_nkw=" + expected), x.url);
+    assert.ok(!/^https:\/\/www\.ebay\.ca\/?$/.test(x.url), "not a bare homepage: " + x.url);
+  });
+});
+
+t("demoSearchUrl encodes multi-word queries and sorts price-lowest-first", () => {
+  const u = E.demoSearchUrl("ThinkPad T480");
+  assert.equal(u, "https://www.ebay.ca/sch/i.html?_nkw=ThinkPad%20T480&_sop=15");
+});
+
+t("matches: everyday words map to categories (mock-customer finding 2026-10-14)", () => {
+  const lap = { title: "ThinkPad T480", description: "", category: "computers" };
+  const bike = { title: "Trek 820", description: "", category: "bikes" };
+  ok_true(R.matches(lap, "laptop", {}), "laptop → computers");
+  ok_true(R.matches(lap, "notebook", {}), "notebook → computers");
+  ok_true(!R.matches(bike, "laptop", {}), "laptop must not match bikes");
+  ok_true(R.matches(bike, "bicycle", {}), "bicycle → bikes");
+  ok_true(R.matches(lap, "ThinkPad T480", {}), "model matching still strict");
+  ok_true(!R.matches(lap, "ThinkPad X1", {}), "model mismatch still rejected");
+  function ok_true(v, m) { assert.ok(v, m); }
+});
