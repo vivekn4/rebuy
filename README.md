@@ -1,13 +1,13 @@
 <!-- Kayak for used goods — calm comparison engine for secondhand listings. -->
 # Rebuy
 
-**Compare every used listing, everywhere.** Rebuy is a calm, hyperlocal comparison engine for used goods: search once ("ThinkPad T480"), and it lines up listings from Rebuy sellers and marketplaces everywhere — normalized, deal-scored, and ready to compare side by side.
+**Compare every used listing, right here in Sudbury.** Rebuy is a calm, hyperlocal comparison engine for used goods: search once ("ThinkPad T480"), and it lines up listings from Rebuy sellers, eBay and the second-hand web side by side — normalized, deal-scored, and ready to compare. Sudbury, Ontario only for now — the site never pretends to cover other cities.
 
 Live at **vivekn4.github.io/rebuy** · Vanilla HTML/CSS/JS · Zero dependencies · Zero build step · Zero budget
 
 ## Screenshot
 
-![Rebuy homepage mockup — centered search with the "Compare every used listing, everywhere" brand statement](assets/screenshot.png)
+![Rebuy homepage — centered search with the "Compare every used listing, right here in Sudbury" brand statement](assets/screenshot.png)
 *Mockup generated for this README — the live app follows the same calm design system (cream, terracotta, sage).*
 
 ## What it does
