@@ -231,7 +231,8 @@
     return {
       q: q.q || "",
       cat: q.cat || "any", min: q.min ? +q.min : null, max: q.max ? +q.max : null,
-      cond: q.cond || "any", sort: q.sort || "deal", src: q.src || "all"
+      cond: q.cond || "any", sort: q.sort || "deal", src: q.src || "all",
+      sudbury: q.sudbury == null ? true : q.sudbury === "1"
     };
   }
   function filtersForAdapters(f) {
@@ -369,6 +370,7 @@
       [["deal", "Best deal"], ["price-asc", "Price: low to high"], ["price-desc", "Price: high to low"], ["newest", "Newest"], ["distance", "Nearest"]].map(function (o) {
         return '<option value="' + o[0] + '"' + (f.sort === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
       }).join("") + "</select></div>" +
+      '<div class="f f-check"><label class="check-label" for="fSudbury"><input type="checkbox" id="fSudbury"' + (f.sudbury ? " checked" : "") + "> Sudbury area only</label></div>" +
       "</div>" +
       '<div class="source-chips" role="group" aria-label="Source filter">' +
       chips.map(function (c) {
@@ -380,7 +382,7 @@
     function pushHash() {
       var p = "q=" + encodeURIComponent(f.q) +
         "&cat=" + $("#fCat").value + "&cond=" + $("#fCond").value + "&sort=" + $("#fSort").value +
-        "&src=" + f.src +
+        "&src=" + f.src + "&sudbury=" + ($("#fSudbury").checked ? "1" : "0") +
         ($("#fMin").value ? "&min=" + $("#fMin").value : "") +
         ($("#fMax").value ? "&max=" + $("#fMax").value : "");
       Sound.toggle(true);
@@ -390,6 +392,7 @@
     ["fCat", "fCond", "fSort"].forEach(function (id) {
       $("#" + id).addEventListener("change", function () { f.cat = $("#fCat").value; f.cond = $("#fCond").value; f.sort = $("#fSort").value; pushHash(); });
     });
+    $("#fSudbury").addEventListener("change", function () { f.sudbury = $("#fSudbury").checked; pushHash(); });
     ["fMin", "fMax"].forEach(function (id) {
       $("#" + id).addEventListener("input", function () {
         clearTimeout(deb);
@@ -425,6 +428,13 @@
         S.cache[it.id] = it;
       });
       var ebayItems = ebay.items || [], gseItems = gse.items || [];
+      // Sudbury-area only: keep eBay listings with a Greater Sudbury (P3) postal
+      // code. Native Rebuy listings are already 25 km-filtered around the center.
+      var ebayWidened = false, ebayHad = ebayItems.length;
+      if (f.sudbury && ebay.mode === "live") {
+        ebayItems = ebayItems.filter(function (it) { return Ebay.isSudburyArea(it); });
+        ebayWidened = ebayHad > 0 && ebayItems.length === 0;
+      }
       var sortFn = function (a, b) { return 0; };
       if (f.sort === "price-asc") sortFn = function (a, b) { return a.price - b.price; };
       else if (f.sort === "price-desc") sortFn = function (a, b) { return b.price - a.price; };
@@ -433,13 +443,26 @@
       else sortFn = function (a, b) { return (b._score || 0) - (a._score || 0); };
       native.sort(sortFn); ebayItems.sort(sortFn); gseItems.sort(sortFn);
 
+      // Best value spotlight: top deal score across every visible source
+      // (respects the Sudbury filter above).
+      var best = null;
+      [native, ebayItems, gseItems].forEach(function (arr) {
+        arr.forEach(function (it) {
+          if (it._score != null && (!best || it._score > best._score)) best = it;
+        });
+      });
+      if (best) {
+        var drop = function (arr) { return arr.filter(function (it) { return it.id !== best.id; }); };
+        native = drop(native); ebayItems = drop(ebayItems); gseItems = drop(gseItems);
+      }
+
       var meta = native.length + " on Rebuy · " + ebayItems.length + " on eBay" +
         (ebay.mode === "demo" ? " (demo)" : " (live)") + " · " + gseItems.length + " web results" +
         (gse.quota ? " (paused — quota)" : gse.mode === "demo" ? " (demo)" : " (live)");
       $("#resultsMeta").textContent = meta;
 
-      renderMainZone(f, native);
-      renderSidePanel(f, { ebay: ebay, ebayItems: ebayItems, gse: gse, gseItems: gseItems });
+      renderMainZone(f, native, best);
+      renderSidePanel(f, { ebay: ebay, ebayItems: ebayItems, gse: gse, gseItems: gseItems, ebayWidened: ebayWidened, sudbury: f.sudbury });
       wireCompareBoxes(view);
       renderTray();
     }).catch(function (err) {
@@ -447,11 +470,31 @@
     });
   }
 
-  function renderMainZone(f, native) {
+  // Featured "Best value" hero: the single best deal score across all sources.
+  function bestValueHTML(it) {
+    var isNative = it.source === "rebuy";
+    var url = isNative ? "#/listing/" + esc(it.id) : (it.url || "#");
+    var label = isNative ? "On Rebuy" : (it.source === "ebay" ? "eBay" : (it.sourceLabel || "Web"));
+    var tab = isNative ? "" : ' target="_blank" rel="noopener"';
+    return '<section class="best-value" aria-label="Best value pick">' +
+      '<div class="bv-badge">' + IC.icon("badge-check", 15) + " Best value</div>" +
+      shopMediaHTML(it, url, !isNative, label.charAt(0).toUpperCase()) +
+      '<div class="shop-body">' +
+      mktRowHTML(label) +
+      '<h3 class="shop-title"><a href="' + url + '"' + tab + ">" + esc(it.title) + "</a></h3>" +
+      priceRowHTML(it) +
+      (it._tier ? '<div class="shop-badges">' + dealBadge(it) + "</div>" : "") +
+      '<div class="shop-actions"><a class="btn btn-primary btn-sm" href="' + url + '"' + tab + ">" +
+      (isNative ? "View listing" : "View on " + esc(label)) + "</a>" +
+      compareCheckHTML(it) + "</div></div></section>";
+  }
+
+  function renderMainZone(f, native, best) {
     var showMain = f.src === "all" || f.src === "rebuy";
     var mz = $("#mainZone");
     if (!showMain) { mz.innerHTML = ""; return; }
-    var html = '<div class="zone-title"><h2 class="serif">On Rebuy</h2>' +
+    var html = (best ? bestValueHTML(best) : "") +
+      '<div class="zone-title"><h2 class="serif">On Rebuy</h2>' +
       '<span class="count">' + native.length + ' nearby</span></div>' +
       '<p><span class="beta-badge">Beta: showing items within 25 km</span></p>' +
       (native.length ? '<div class="cards">' + native.map(cardHTML).join("") + "</div>"
@@ -508,13 +551,21 @@
     if (f.src === "rebuy") { sp.innerHTML = html + '<p class="hint">Showing only Rebuy listings. Switch the source filter to compare elsewhere.</p>'; return; }
 
     if (showEbay) {
-      html += '<div class="tier-label">' + (R.ebay.mode === "live" && !R.ebay.quota ? "eBay · live prices" : "eBay") + "</div>";
+      html += '<div class="tier-label">' + (R.ebay.mode === "live" && !R.ebay.quota ? "eBay · live prices" : "eBay") +
+        (R.sudbury && R.ebay.mode === "live" ? " · Sudbury area" : "") + "</div>";
       html += modeNote(R.ebay, "add your free eBay key in Settings");
       if (R.ebay.notice && R.ebay.mode === "demo")
         html += '<div class="mode-note demo">' + esc(R.ebay.notice) + "</div>";
-      html += R.ebayItems.length
-        ? '<div class="cards">' + R.ebayItems.map(extCardHTML).join("") + "</div>"
-        : '<p class="hint">No eBay matches for this search.</p>';
+      if (R.ebayItems.length) {
+        html += '<div class="cards">' + R.ebayItems.map(extCardHTML).join("") + "</div>";
+      } else if (R.ebayWidened) {
+        var widenHash = "#/search?q=" + encodeURIComponent(q) + "&cat=any&cond=any&sort=deal&src=" +
+          (f.src === "all" ? "all" : "ebay") + "&sudbury=0";
+        html += '<div class="empty"><p class="serif">No Sudbury-area eBay listings for this search.</p>' +
+          '<p><a class="btn btn-soft btn-sm" href="' + widenHash + '">Show all Canadian results</a></p></div>';
+      } else {
+        html += '<p class="hint">No eBay matches for this search.</p>';
+      }
     }
     if (showWeb) {
       html += '<div class="tier-label">Across the second-hand web</div>';

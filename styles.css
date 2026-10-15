@@ -213,6 +213,32 @@ label.field > span { display: block; font-weight: 600; font-size: .88rem; margin
 
 /* ---------- shopping cards (Google-Shopping pattern, calm theme) ---------- */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--size-4); }
+/* Best-value spotlight: featured pick at the top of the results column. */
+.best-value {
+  display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 1.1rem;
+  background: var(--card); border: 2px solid var(--sage); border-radius: var(--radius);
+  padding: 1rem 1.1rem 1.1rem; margin: 0 0 1.3rem; box-shadow: var(--shadow);
+  position: relative;
+}
+.best-value .shop-media { border-radius: calc(var(--radius) - 4px); }
+.bv-badge {
+  position: absolute; top: -.75rem; left: 1rem; z-index: 2;
+  display: inline-flex; align-items: center; gap: .35rem;
+  background: var(--sage); color: #fff; font-size: .72rem; font-weight: 800;
+  letter-spacing: .05em; text-transform: uppercase;
+  padding: .3rem .7rem; border-radius: var(--radius-round);
+  box-shadow: 0 4px 12px rgba(0,0,0,.14);
+}
+.f-check { display: flex; align-items: flex-end; padding-bottom: .1rem; }
+.check-label {
+  display: inline-flex; align-items: center; gap: .45rem;
+  font-size: .85rem; font-weight: 600; color: var(--ink-soft); cursor: pointer;
+  white-space: nowrap;
+}
+.check-label input { width: 1rem; height: 1rem; accent-color: var(--clay); }
+@media (max-width: 640px) {
+  .best-value { grid-template-columns: 1fr; }
+}
 .shop-card {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column;

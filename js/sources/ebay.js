@@ -54,6 +54,7 @@
       var m = /^#ebay-setup=([A-Za-z0-9\-_]+=*)$/.exec(location.hash);
       if (!m) return false;
       var b64 = m[1].replace(/-/g, "+").replace(/_/g, "/");
+      while (b64.length % 4) b64 += "="; // atob throws on unpadded input in some browsers
       var json = (typeof atob !== "undefined" ? atob : function (s) { return Buffer.from(s, "base64").toString("utf8"); })(b64);
       var o = JSON.parse(json);
       if (o && o.clientId && o.clientSecret) {
@@ -112,6 +113,14 @@
     return API + "/item_summary/search?" + p.join("&");
   }
 
+  // Greater Sudbury forward sortation areas (P3A..P3Y). eBay itemLocation
+  // carries a masked postal code ("P3A***") but no city, so the FSA prefix is
+  // the reliable Sudbury signal.
+  function isSudburyArea(it) {
+    var p = (it && it.postal) || "";
+    return p.indexOf("P3") === 0;
+  }
+
   var COND_MAP = [
     [/new|open box/i, "like-new"],
     [/certified.*refurbished|excellent.*refurbished/i, "like-new"],
@@ -136,6 +145,7 @@
       image: (it.image && it.image.imageUrl) || "",
       url: it.itemWebUrl || "",
       location: { label: ((it.itemLocation && it.itemLocation.city) || "") + (((it.itemLocation && it.itemLocation.city) && (it.itemLocation.country)) ? ", " : "") + ((it.itemLocation && it.itemLocation.country) || "eBay") },
+      postal: ((it.itemLocation && it.itemLocation.postalCode) || "").toUpperCase().replace(/\*+$/, ""),
       distanceKm: null,
       listedAt: it.itemCreationDate || null,
       seller: {
@@ -250,6 +260,7 @@
     demoResults: demoResults, demoSearchUrl: demoSearchUrl, buildSearchUrl: buildSearchUrl,
     isTokenFresh: isTokenFresh, getKeys: getKeys, saveKeys: saveKeys,
     clearKeys: clearKeys, hasKeys: hasKeys, marketplace: marketplace, hashStr: hashStr,
-    consumeSetupFragment: consumeSetupFragment, defaultClientId: DEFAULT_CLIENT_ID
+    consumeSetupFragment: consumeSetupFragment, defaultClientId: DEFAULT_CLIENT_ID,
+    isSudburyArea: isSudburyArea
   };
 });
