@@ -189,7 +189,7 @@
       '<div class="view-narrow" style="margin:0 auto">' +
       '<section class="hero">' +
       '<span class="hero-eyebrow">Kayak for used goods · Sudbury beta</span>' +
-      "<h1><span class=\"word-compare\">Compare</span> every used listing, everywhere.</h1>" +
+      "<h1><span class=\"word-compare\">Compare</span> every used listing, right here in Sudbury.</h1>" +
       '<p class="tagline">Search once. We line up Rebuy sellers and marketplaces side by side, score the deal, and let you pick the winner.</p>' +
       '<form class="search-hero" id="heroSearch">' +
       '<input type="search" id="heroQ" placeholder="Try &quot;ThinkPad T480&quot;…" aria-label="Search used listings" autocomplete="off" enterkeyhint="search">' +
@@ -245,10 +245,14 @@
   }
 
   // Honest location pill: always reads "Within {km} km of {label}" from live
-  // state — never a hardcoded string.
+  // state — never a hardcoded string. The compact span feeds narrow phones
+  // (≤560px), where the full label would truncate mid-word.
   function paintPill() {
-    var pill = document.getElementById("locationLabel");
-    if (pill) pill.textContent = "Within " + G.getRadiusKm() + " km of " + S.center.label;
+    var km = G.getRadiusKm(), label = S.center.label;
+    var full = document.getElementById("locationLabel");
+    if (full) full.textContent = "Within " + km + " km of " + label;
+    var short = document.getElementById("locationLabelShort");
+    if (short) short.textContent = km + " km · " + label;
   }
 
   // ---------- shopping cards (Google-Shopping pattern, calm theme) ----------
@@ -653,7 +657,7 @@
           : '<div class="empty"><p class="serif">No matches here.</p></div>') +
         (f.src === "web" ? '<div class="tier-label">Search directly on</div>' +
           deepLinkChipsHTML(q) + '<p class="honest-note">' + esc(DL.HONEST_NOTE) + "</p>" : "");
-      sp.innerHTML = "<h2 class=\"serif\">Also listed on</h2><p class=\"hint\">Focused view — switch the source filter back to “All” to compare everywhere at once.</p>";
+      sp.innerHTML = "<h2 class=\"serif\">Also listed on</h2><p class=\"hint\">Focused view — switch the source filter back to “All” to compare all sources at once.</p>";
       wireCompareBoxes(mz);
       return;
     }
