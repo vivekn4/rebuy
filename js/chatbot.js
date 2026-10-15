@@ -24,7 +24,7 @@
     { keys: ["safe", "safety", "meetup", "meet", "scam", "is rebuy a scam"], title: "Buying safely",
       a: "Meet in a public, well-lit place during the day, bring a friend if you can, and check the item before you pay. Good Sudbury spots: the Greater Sudbury Police HQ lobby (190 Brady St) and the New Sudbury Centre food court." },
     { keys: ["turn on live ebay", "live ebay", "ebay"], title: "Turn on live eBay results",
-      a: "Open Settings — the App ID is pre-filled; just add the free Cert ID from developer.ebay.com (no card) and save. Your keys stay on this device only." },
+      a: "Open #/settings \u2014 the App ID is pre-filled; just add the free Cert ID from developer.ebay.com (no card) and save. Your keys stay on this device only." },
     { keys: ["demo", "sample", "placeholder", "fake", "mock"], title: "Demo vs live",
       a: "Anything tagged \u201cDemo\u201d is a sample so you can see how the site works \u2014 not a real item for sale. Live eBay results are real listings with real photos, once you\u2019ve added your free eBay key in Settings." }
   ];
