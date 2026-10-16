@@ -19,7 +19,8 @@
     center: { lat: G.SUDBURY.lat, lng: G.SUDBURY.lng, label: "Sudbury, ON", source: "fallback" },
     cache: {},        // id -> normalized item (for compare tray)
     compareIds: [],   // selected ids, max 4
-    lastSearch: null  // {query, filters} for "save this search"
+    lastSearch: null, // {query, filters} for "save this search"
+    alertPings: {}    // alert id -> true, once per session: saved-search pings
   };
   try {
     S.compareIds = JSON.parse(localStorage.getItem("rebuy:compare") || "[]");
@@ -515,6 +516,7 @@
       renderSidePanel(f, { ebay: ebay, ebayItems: ebayItems, gse: gse, gseItems: gseItems, ebayWidened: ebayWidened, sudbury: f.sudbury, best: best, med: med });
       wireCompareBoxes(view);
       renderTray();
+      checkAlertsLive(f, native, best, ebay, ebayItems);
     }).catch(function (err) {
       $("#mainZone").innerHTML = '<div class="empty"><p class="serif">Something hiccupped.</p><p>' + esc(String((err && err.message) || err)) + "</p></div>";
     });
@@ -1040,6 +1042,41 @@
         });
       } catch (e) {}
     }
+  }
+
+  // Alert matching across live external results: after a search resolves,
+  // run every saved alert against the combined live pool (native listings
+  // + eBay items in LIVE mode only — demo samples never count, per HONEST
+  // DATA). Alerts whose query is the current search are skipped (the user
+  // is already looking at those results); each alert pings once per
+  // session. In-page toast + dot only — the user is active here, so no
+  // browser Notification.
+  function checkAlertsLive(f, native, best, ebay, ebayItems) {
+    try {
+      var alerts = Store.alerts();
+      if (!alerts.length) return;
+      var pool = native.slice();
+      if (best) pool.push(best);
+      if (ebay && ebay.mode === "live") pool = pool.concat(ebayItems || []);
+      var curQ = (f.q || "").trim().toLowerCase();
+      var hits = [];
+      alerts.forEach(function (a) {
+        if (S.alertPings[a.id]) return;
+        if ((a.query || "").trim().toLowerCase() === curQ) return;
+        var match = null;
+        for (var i = 0; i < pool.length; i++) {
+          if (Native.matches(pool[i], a.query, a.filters || {})) { match = pool[i]; break; }
+        }
+        if (match) { S.alertPings[a.id] = true; hits.push({ alert: a, item: match }); }
+      });
+      if (!hits.length) return;
+      Sound.notify();
+      hits.forEach(function (h) {
+        toast("Your \"" + h.alert.query + "\" alert just matched — " + h.item.title, "success");
+      });
+      var dot = document.getElementById("alertsDot");
+      if (dot) dot.hidden = false;
+    } catch (e) { /* never break the results page */ }
   }
 
   // ============================================================ SPEND
