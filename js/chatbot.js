@@ -219,7 +219,8 @@
       }).join("") + "</div>" +
       '<form class="chat-compose"><input type="text" id="chatInput" placeholder="Ask about Rebuy\u2026" aria-label="Ask about Rebuy" maxlength="500" autocomplete="off">' +
       '<button class="chat-send" type="submit" aria-label="Send">' + icon("send", 17) + "</button></form>" +
-      '<p class="chat-foot">Rebuy never takes a cut \u2014 you pay the seller in person.</p>';
+      '<p class="chat-foot">Rebuy never takes a cut \u2014 you pay the seller in person.</p>' +
+      '<p class="chat-foot chat-privacy">If the quick answers can\u2019t help, your typed question is sent privately to our free AI helper \u2014 never posted publicly.</p>';
 
     document.body.appendChild(bubble);
     document.body.appendChild(panel);
