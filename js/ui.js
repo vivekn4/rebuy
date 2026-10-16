@@ -1056,7 +1056,11 @@
       var alerts = Store.alerts();
       if (!alerts.length) return;
       var pool = native.slice();
-      if (best) pool.push(best);
+      // The spotlight hero may be a demo sample (demo eBay/GSE items carry
+      // demo:true and are titled after the current query, so a saved alert
+      // can easily token-match them). A 'your alert matched' ping must never
+      // fire on a sample — HONEST DATA — so only real items enter the pool.
+      if (best && !best.demo) pool.push(best);
       if (ebay && ebay.mode === "live") pool = pool.concat(ebayItems || []);
       var curQ = (f.q || "").trim().toLowerCase();
       var hits = [];
