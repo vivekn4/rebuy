@@ -457,7 +457,7 @@ journey("28 Paul, seller — post with live guidance → searchable", async (ctx
 
 /* ======================= SETTINGS & EDGE CASES (29–30) ==================== */
 
-journey("29 Quinn, keymaster — eBay keys flip status to live-attempt", async (ctx) => {
+journey("29 Quinn, keymaster — eBay keys flip status with honest demo note", async (ctx) => {
   const { window, document, $ } = ctx;
   await nav(window, "#/settings");
   setVal(window, $("#ebayId"), "test-app-id");
@@ -466,7 +466,10 @@ journey("29 Quinn, keymaster — eBay keys flip status to live-attempt", async (
   await tick(200);
   const status = $("#ebayStatus");
   ok(status.classList.contains("ok"), "status did not flip: " + status.textContent);
-  ok(/Live eBay key saved/.test(status.textContent), "status text wrong");
+  // Honest copy: the key is saved on-device, but eBay stays demo in the browser
+  // (eBay blocks in-page requests) — never promise live eBay.
+  ok(/eBay key saved on this phone/i.test(status.textContent), "status text wrong: " + status.textContent);
+  ok(/stay demo/i.test(status.textContent), "status omits honest demo note: " + status.textContent);
   // live attempt must degrade honestly (no network in harness) — never crash
   await nav(window, "#/search?q=laptop");
   const sp = $("#sidePanel").textContent;
@@ -602,6 +605,31 @@ journey("35 Xander, alert-saver — one-tap alert on the results page", async (c
   clickEl(window, btn); // tapping again must not duplicate
   await tick(150);
   ok(window.RebuyStore.alerts().length === 1, "duplicate alert saved");
+});
+
+journey("35b Alan, alert-watcher — saved alert pings on live results, once", async (ctx) => {
+  const { window, document, $ } = ctx;
+  // seed: one alert whose query matches a bike listing, one matching nothing
+  window.RebuyStore.addAlert({ query: "trek" });
+  window.RebuyStore.addAlert({ query: "grandpiano" });
+  await nav(window, "#/search?q=bike");
+  await tick(600); // results resolve + checkAlertsLive runs
+  const toasts = [...document.querySelectorAll("#toastRegion .toast")].map(t => t.textContent);
+  ok(toasts.some(t => /"trek" alert just matched/.test(t)), "no ping for matching alert: " + JSON.stringify(toasts));
+  ok(!toasts.some(t => /"grandpiano"/.test(t)), "false-positive ping for non-matching alert");
+  ok(!$("#alertsDot").hidden, "alerts dot not lit after ping");
+  // repeat search must NOT re-ping (once per session)
+  const before = toasts.length;
+  await nav(window, "#/search?q=bike");
+  await tick(600);
+  const after = [...document.querySelectorAll("#toastRegion .toast")].map(t => t.textContent);
+  ok(after.filter(t => /"trek" alert just matched/.test(t)).length <= 1, "re-pinged within session: " + JSON.stringify(after));
+  // an alert for the CURRENT search query stays quiet (user is already looking)
+  window.RebuyStore.addAlert({ query: "laptop" });
+  await nav(window, "#/search?q=laptop");
+  await tick(600);
+  const lap = [...document.querySelectorAll("#toastRegion .toast")].map(t => t.textContent);
+  ok(!lap.some(t => /"laptop" alert just matched/.test(t)), "pinged for current-search query");
 });
 
 journey("36 Yara, offline chatter — unknown question degrades gracefully", async (ctx) => {
