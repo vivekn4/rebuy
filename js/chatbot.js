@@ -23,7 +23,7 @@
       a: "Never. Zero commission, always — you pay the seller in person." },
     { keys: ["safe", "safety", "meetup", "meet", "scam", "is rebuy a scam"], title: "Buying safely",
       a: "Meet in a public, well-lit place during the day, bring a friend if you can, and check the item before you pay. Good Sudbury spots: the Greater Sudbury Police HQ lobby (190 Brady St) and the New Sudbury Centre food court." },
-    { keys: ["turn on live ebay", "live ebay", "ebay"], title: "Turn on live eBay results",
+    { keys: ["turn on live ebay", "live ebay", "ebay"], title: "Why eBay results stay demo",
       a: "Use the one-tap setup link from your chat \u2014 it saves your free eBay key on this phone. Heads-up: eBay blocks in-page requests, so eBay results stay clearly-labeled demo samples for now. Your keys stay on this device only." },
     { keys: ["delivery", "deliver", "shipping", "ship it"], title: "Delivery and shipping",
       a: "Rebuy is in-person only \u2014 no delivery or shipping. You meet the seller, check the item, and pay on the spot." },
@@ -34,9 +34,9 @@
     { label: "How does Rebuy work?", q: "How does Rebuy work?" },
     { label: "Is it free?", q: "Is Rebuy free?" },
     { label: "Safe meetup tips", q: "How do I buy safely?" },
-    { label: "Turn on live eBay", q: "How do I turn on live eBay results?" }
+    { label: "eBay demo mode", q: "Why do eBay results stay demo?" }
   ];
-  var FALLBACK_SYSTEM = "You are the Rebuy help assistant. Rebuy is a calm, free used-goods comparison site in beta around Sudbury, Ontario, Canada (default 25 km radius). Help only with Rebuy topics: how it works, zero commission, safe in-person meetups in Sudbury, live eBay setup, alerts, selling, search radius, deal scores. Never invent listings, prices, features, or locations; never claim coverage beyond Sudbury; if unsure, say so and point to Settings or the seller. Off-topic questions get one short polite redirect sentence. Keep answers under 60 words, plain and neighborly.";
+  var FALLBACK_SYSTEM = "You are the Rebuy help assistant. Rebuy is a calm, free used-goods comparison site in beta around Sudbury, Ontario, Canada (default 25 km radius). Help only with Rebuy topics: how it works, zero commission, safe in-person meetups in Sudbury, eBay demo samples (eBay blocks in-page requests), the free Google key for live web results, alerts, selling, search radius, deal scores. Never invent listings, prices, features, or locations; never claim coverage beyond Sudbury; if unsure, say so and point to Settings or the seller. Off-topic questions get one short polite redirect sentence. Keep answers under 60 words, plain and neighborly.";
 
   var GREETING_TEXT = "Hi there — quick question about Rebuy? Ask below, or tap a topic.";
   var THANKS_TEXT = "Anytime. Happy hunting.";
