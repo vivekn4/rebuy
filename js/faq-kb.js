@@ -44,13 +44,13 @@
       id: "live-ebay",
       keys: ["ebay", "live", "setup", "one-tap", "key", "thumbnails", "photos", "real listings", "turn on"],
       title: "Turn on live eBay results",
-      body: "Open #/settings and tap the one-tap eBay setup link — it saves your free eBay key on your phone and switches results to live listings with real product photos. The secret is stripped from the address bar right after, and your key never leaves your device. You can check the status any time under Settings."
+      body: "Use the one-tap setup link from your chat — one tap saves your free eBay key on this phone and switches results to live listings with real product photos. Lost the link? Open #/settings and paste the App ID and Cert ID instead (the App ID is pre-filled). Your key never leaves your device."
     },
     {
       id: "alerts",
       keys: ["alert", "alerts", "how do alerts work", "alerts work", "saved search", "saved searches", "save search", "notify", "notification", "ping", "watch", "remind"],
       title: "Saved-search alerts",
-      body: "Find something you like, tap \"Save this search\", and Rebuy watches for you. When a matching listing lands or a price drops, you get a gentle ping — in the app, and in your browser if you turn that on. Manage or remove them any time under Alerts. No spam, ever."
+      body: "Find something you like, tap \"Save this search\", and Rebuy watches for you. When a matching listing lands, you get a gentle ping — in the app, and in your browser if you turn notifications on. Manage or remove them any time under Alerts. No spam, ever."
     },
     {
       id: "selling",
@@ -63,6 +63,18 @@
       keys: ["where", "area", "cover", "city", "cities", "toronto", "location", "radius", "near me", "sudbury", "distance", "km"],
       title: "Where Rebuy works",
       body: "Rebuy is in beta around Sudbury, Ontario. By default it shows things within 25 km of you; you can widen the radius in the location pill (up to 100 km). We only cover the Sudbury area for now — we won't pretend otherwise."
+    },
+    {
+      id: "demo",
+      keys: ["demo", "sample", "placeholder", "fake", "mock", "real listings", "not real", "samples"],
+      title: "Demo vs live",
+      body: "Anything tagged \u201cDemo\u201d is a sample so you can see how the site works \u2014 not a real item for sale. Live eBay results are real listings with real photos, once you\u2019ve added your free eBay key in Settings. We never dress samples up as real deals."
+    },
+    {
+      id: "shipping",
+      keys: ["delivery", "deliver", "shipping", "ship it", "post it", "mail"],
+      title: "Delivery and shipping",
+      body: "Rebuy is in-person only \u2014 there\u2019s no delivery or shipping. You meet the seller, check the item, and pay on the spot. Keep meetups public and daytime, and bring a friend if you can."
     },
     {
       id: "deal-scores",
@@ -101,9 +113,10 @@
     "You are the Rebuy help bot — a calm, plain-spoken assistant for Rebuy,",
     "a free used-goods comparison site in beta around Sudbury, Ontario.",
     "Answer ONLY Rebuy help topics: how Rebuy works, zero commission, safe",
-    "in-person meetups, live eBay setup (#ebay-setup in Settings), alerts and",
+    "in-person meetups, live eBay setup (the one-tap #ebay-setup link in your chat, or Settings),",
     "saved searches, selling on Rebuy, search radius, deal scores, offers, the",
-    "Spend tab, and comparing listings.",
+    "Spend tab, comparing listings, demo-vs-live labels, and delivery/shipping",
+    "(Rebuy is in-person only — no delivery, no shipping).",
     "Hard rules:",
     "- Never invent listings, prices, sellers, features, or locations.",
     "- Never claim Rebuy covers any city beyond the Sudbury, Ontario area.",
