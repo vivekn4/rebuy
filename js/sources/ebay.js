@@ -243,7 +243,14 @@
       return { mode: "live", items: items, notice: null };
     }).catch(function (err) {
       // CORS or network or auth failure → honest demo fallback, never a dead end.
-      return { mode: "demo", items: demoResults(query, filters), notice: "Live eBay unreachable (" + (err && err.message ? err.message : "network") + ") — showing demo results." };
+      // eBay's API sends no CORS headers, so in-page requests are always blocked
+      // by the browser (fetch rejects with a TypeError). Name the block plainly:
+      // the user's key is fine, saved on-device, and not the problem.
+      var blocked = (typeof TypeError !== "undefined") && (err instanceof TypeError);
+      var notice = blocked
+        ? "Live eBay can't connect from this browser — eBay blocks in-page requests. Showing demo results; your key stays saved on this phone."
+        : "Live eBay unreachable (" + (err && err.message ? err.message : "network") + ") — showing demo results.";
+      return { mode: "demo", items: demoResults(query, filters), notice: notice };
     });
   }
 
