@@ -2,7 +2,7 @@
 
 *Producer: full team pass over the live site — https://vivekn4.github.io/rebuy/ (repo `vivekn4/rebuy`, HEAD `26afd5e`, VISION.md on main).*
 *North star: VISION.md (north-star committed 2026-10-15). This plan replaces the 2026-10-15 build plan (preserved in git history).*
-*Outcome of this pass: every shipped requirement verified in code + live site, full test suite green (74/74), zero below-the-bar defects — so no code changes were made. No user-facing deliverable ships from this pass; the plan below records what each team verified and what it keeps watching.*
+*Outcome of this pass: every shipped requirement verified in code + live site, full test suite green (76/76). One below-the-bar defect was found and fixed by the Integrations Engineer: the live eBay path is CORS-blocked in real browsers, so all copy claiming live eBay results now names the browser block plainly (see §4, still open). PLAN.md is the only documentation change; the fix itself (copy + notice classification + 2 tests) shipped in this pass.*
 
 ---
 
@@ -58,7 +58,7 @@ This pass confirms that story is true on the live site, every screen, every labe
 
 ### 3.3 QC team (QA Lead, QA Engineer, Compatibility Tester) — all green this pass
 
-- Unit suite: **74/74 pass** (`node --test test/*.js`). Note: run it as the glob, not `node --test test/` — the bare-directory form mis-fires on this box.
+- Unit suite: **76/76 pass** (`node --test test/*.js`). Note: run it as the glob, not `node --test test/` — the bare-directory form mis-fires on this box.
 - Journeys (test-harness): chatbot opens → Tier-1 "Is it free?" answered instantly (no network); radius selector has 4 options, changing 25→10 re-runs search and pill reads live value; invalid radius rejected; Sudbury toggle + widen-out covered; Best Value hero asserts.
 - Live-site check: homepage renders with pill "Sudbury, ON 25 km"; zero-console-errors gate previously passed across 8 views + chat widget.
 - `frag-test.html`: confirmed absent from repo root and not shipped (live URL not present).
@@ -92,7 +92,7 @@ This pass confirms that story is true on the live site, every screen, every labe
 | Chatbot invents a listing/price/city | System prompt forbids; KB has no prices; output escaped; failure path honest. Verified. |
 | XSS via model output | `esc()` path everywhere; `rich()` only linkifies `#/settings`. Verified. |
 | Cert ID lingers in URL after `#ebay-setup` | Hash stripped post-save; keys in localStorage only. Verified. |
-| `node --test test/` mis-fires on this box | Always run `node --test test/*.js` (74/74). Documented here. |
+| `node --test test/` mis-fires on this box | Always run `node --test test/*.js` (76/76). Documented here. |
 | Chat panel covers Compare tray on 360px | `.chat-above-tray` class + MutationObserver lifts the bubble; panel is bottom-sheet. Verified in journeys. |
 | Secret accidentally committed | Standing: user keys never in repo; App ID is public-by-design; git-grep audit clean. Verified. |
 
@@ -105,7 +105,7 @@ This pass confirms that story is true on the live site, every screen, every labe
 | 1 — Plan | This PLAN.md; vision bar confirmed (VISION.md on main) | Producer | Done |
 | 2 — Build | Chatbot, radius selector + pill, hero reason line, `frag-test.html` deletion | UI/UX, Dev, Retention | Done (prior pass) |
 | 3 — Integrate | Merge, token/palette check | Integrator | Done (prior pass) |
-| 4 — QC | 74/74 unit green, journeys green, live pill verified, secrets audit clean | QC team | Done |
+| 4 — QC | 76/76 unit green, journeys green, live pill verified, secrets audit clean | QC team | Done |
 | 5 — Ship | No code changes this pass; live site already serves current build | Release Manager | Done |
 | 6 — Greenlight | Every team votes against VISION.md; unanimous or it doesn't ship | All | Ready — nothing ships until user sign-off |
 
