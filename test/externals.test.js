@@ -141,3 +141,51 @@ t("demoResults: link-outs are site-restricted searches for the query, not domain
     assert.ok(!/^https:\/\/[^/]+\/$/.test(x.url), "not a bare homepage: " + x.url);
   });
 });
+
+const E = require("../js/sources/ebay.js");
+
+// in-page localStorage stub so saveKeys/hasKeys work under node
+function stubLocalStorage() {
+  const mem = {};
+  globalThis.localStorage = {
+    getItem: k => (k in mem ? mem[k] : null),
+    setItem: (k, v) => { mem[k] = String(v); },
+    removeItem: k => { delete mem[k]; }
+  };
+}
+
+t("ebay search(): browser-blocked fetch (TypeError) → demo with plain-language block notice", () => {
+  stubLocalStorage();
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = () => Promise.reject(new TypeError("fetch failed")); // what CORS gives browsers
+  E.saveKeys("id", "secret", "EBAY_CA");
+  return E.search("thinkpad").then(r => {
+    assert.equal(r.mode, "demo");
+    assert.ok(r.items.length > 0, "still returns labeled demo items");
+    assert.ok(r.notice && r.notice.includes("blocks in-page requests"),
+      "names the browser block plainly: " + r.notice);
+  }).finally(() => {
+    globalThis.fetch = realFetch;
+    delete globalThis.localStorage;
+  });
+});
+
+t("ebay search(): HTTP auth failure → demo with generic unreachable notice", () => {
+  stubLocalStorage();
+  const realFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = () => {
+    calls++;
+    if (calls === 1) return Promise.resolve({ ok: true, json: () => Promise.resolve({ access_token: "tok", expires_in: 7200 }) });
+    return Promise.resolve({ ok: false, status: 401 });
+  };
+  E.saveKeys("id", "secret", "EBAY_CA");
+  return E.search("bike").then(r => {
+    assert.equal(r.mode, "demo");
+    assert.ok(r.notice && r.notice.includes("401"), "keeps the HTTP status: " + r.notice);
+    assert.ok(!r.notice.includes("blocks in-page requests"), "does not mislabel an auth error as a block");
+  }).finally(() => {
+    globalThis.fetch = realFetch;
+    delete globalThis.localStorage;
+  });
+});
