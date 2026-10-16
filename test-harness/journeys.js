@@ -632,6 +632,41 @@ journey("37 Zane, tray test — chat bubble lifts when the compare tray shows", 
   ok(!document.body.classList.contains("chat-above-tray"), "lift class stuck after tray cleared");
 });
 
+/* ============================ SUDBURY FILTER (38) ============================ */
+
+journey("38 Farah, local-only shopper — Sudbury filter widens gracefully", async (ctx) => {
+  const { window, document, $ } = ctx;
+  // Stub a LIVE eBay with zero Sudbury-area listings (no P3 postal codes),
+  // real product photos on the items.
+  const orig = window.RebuyEbay.searchVerbose;
+  const liveItems = [0, 1, 2].map(i => ({
+    id: "ebay_t" + i, source: "ebay", title: "Laptop — used, tested", price: 320 + i * 40,
+    currency: "CAD", condition: "good", image: "https://i.ebayimg.com/images/g/abc" + i + ".jpg",
+    url: "https://www.ebay.ca/itm/" + i, postal: "M4B1B3",
+    location: { label: "Toronto, ON" }, distanceKm: null, listedAt: null,
+    seller: { name: "seller" + i, rating: 99, verified: false }
+  }));
+  window.RebuyEbay.searchVerbose = () => Promise.resolve({ mode: "live", notice: null, items: liveItems });
+  try {
+    await nav(window, "#/search?q=laptop&sudbury=1");
+    const cb = $("#fSudbury");
+    ok(cb && cb.checked, "Sudbury-area checkbox missing or not default-on");
+    const sp = $("#sidePanel");
+    ok(/eBay · live prices · Sudbury area/.test(sp.textContent), "Sudbury-area tier label missing: " + sp.textContent.slice(0, 160));
+    ok(/No Sudbury-area eBay listings for this search/.test(sp.textContent), "no graceful empty state");
+    const link = sp.querySelector("a[href*='sudbury=0']");
+    ok(link && /Show all Canadian results/.test(link.textContent), "widen link missing");
+    // One tap widens to all Canadian results — live thumbnails must render.
+    window.location.hash = link.getAttribute("href");
+    window.RebuyUI.route(); await tick(400);
+    ok(window.location.hash.includes("sudbury=0"), "widen link lost sudbury=0: " + window.location.hash);
+    const img = document.querySelector("#sidePanel img[src*='i.ebayimg.com']");
+    ok(img, "live eBay thumbnail missing from widened results");
+  } finally {
+    window.RebuyEbay.searchVerbose = orig;
+  }
+});
+
 /* ================================ RUNNER ================================= */
 
 (async () => {
