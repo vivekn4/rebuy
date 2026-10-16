@@ -1197,17 +1197,17 @@
     view.innerHTML =
       '<div class="view-narrow" style="margin:0 auto"><section class="results-head">' +
       '<h1 class="serif">Settings</h1>' +
-      '<p class="results-meta">Everything works in demo mode. Keys unlock live data — free, no card, stored only on this device.</p></section>' +
+      '<p class="results-meta">Everything works in demo mode. The Google key unlocks live web results — free, no card, stored only on this device.</p></section>' +
 
       '<div class="panel key-card"><h3 class="serif">eBay API key</h3>' +
-      '<p class="hint">Your App ID is pre-filled below — just add the Cert ID (client secret) from <strong>developer.ebay.com → Application Keys</strong>. Free, no card. Unlocks <strong>live eBay results</strong> in “Also listed on”. Keys stay on this device only.</p>' +
+      '<p class="hint">Your App ID is pre-filled below — just add the Cert ID (client secret) from <strong>developer.ebay.com → Application Keys</strong>. Free, no card. Heads-up: eBay blocks in-page requests, so eBay results stay demo for now — your key stays on this device only.</p>' +
       '<div class="key-row"><label class="field"><span>App ID (client ID)</span><input type="text" id="ebayId" value="' + esc((ek && ek.clientId) || "") + '" autocomplete="off"></label>' +
       '<label class="field"><span>Cert ID (client secret)</span><input type="text" id="ebaySecret" value="' + esc((ek && ek.clientSecret) || "") + '" autocomplete="off"></label></div>' +
       '<label class="field"><span>Marketplace</span><select id="ebayMkt"><option value="EBAY_CA"' + ((ek && ek.marketplace) !== "EBAY_US" ? " selected" : "") + '>Canada (EBAY_CA)</option>' +
       '<option value="EBAY_US"' + ((ek && ek.marketplace) === "EBAY_US" ? " selected" : "") + '>United States (EBAY_US)</option></select></label>' +
       '<button class="btn btn-primary btn-sm" id="ebaySave">Save eBay key</button> ' +
       '<button class="btn btn-ghost btn-sm" id="ebayClear">Remove</button>' +
-      '<p class="status-line ' + (ebayOn ? "ok" : "off") + '" id="ebayStatus">' + IC.icon(ebayOn ? "circle-check" : "circle", 14) + " " + (ebayOn ? "Live eBay key saved — searches use real listings." : "Demo mode — add your free key for live eBay results.") + "</p></div>" +
+      '<p class="status-line ' + (ebayOn ? "ok" : "off") + '" id="ebayStatus">' + IC.icon(ebayOn ? "circle-check" : "circle", 14) + " " + (ebayOn ? "eBay key saved on this phone — eBay results stay demo for now (eBay blocks in-page requests)." : "Demo mode — your eBay key is kept on this phone only.") + "</p></div>" +
 
       '<div class="panel key-card"><h3 class="serif">Google Search API key + Engine ID</h3>' +
       '<p class="hint">Free: Google Cloud Console → enable the Custom Search API (100 queries/day) for the key, then create a Programmable Search Engine at <strong>programmablesearchengine.google.com</strong> restricted to marketplace domains (kijiji.ca, craigslist.org, facebook.com/marketplace…). Unlocks <strong>cross-marketplace web results</strong>.</p>' +
@@ -1242,7 +1242,7 @@
       var id = $("#ebayId").value.trim(), sec = $("#ebaySecret").value.trim();
       if (!id || !sec) { Sound.error(); toast("Paste both the App ID and the Cert ID.", "error"); return; }
       Ebay.saveKeys(id, sec, $("#ebayMkt").value);
-      Sound.success(); toast("eBay key saved — live results unlocked.", "success"); route();
+      Sound.success(); toast("eBay key saved on this phone. Heads-up: eBay blocks in-page requests, so eBay results stay clearly-labeled demo samples.", "success"); route();
     });
     $("#ebayClear").addEventListener("click", function () { Ebay.clearKeys(); Sound.toggle(false); route(); });
     $("#gseSave").addEventListener("click", function () {
@@ -1342,7 +1342,7 @@
     window.addEventListener("hashchange", route);
     // one-tap eBay setup link: save keys, strip the secret from the URL, confirm
     try {
-      if (Ebay.consumeSetupFragment()) toast("eBay connected — live listings on.", "");
+      if (Ebay.consumeSetupFragment()) toast("eBay key saved — eBay results stay demo for now (eBay blocks in-page requests).", "");
     } catch (e) {}
     route();
   }
