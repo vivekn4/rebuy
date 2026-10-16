@@ -172,9 +172,10 @@
     };
   }
 
-  var DEMO_CITIES = ["Sudbury, ON", "North Bay, ON", "Timmins, ON", "Sault Ste. Marie, ON", "Toronto, ON", "Ottawa, ON"];
+  // Demo listings stay Sudbury-local — the site never implies coverage elsewhere.
+  var DEMO_CITIES = ["Sudbury, ON", "New Sudbury, ON", "Chelmsford, ON", "Valley East, ON", "Garson, ON", "Azilda, ON", "Lively, ON", "Dowling, ON"];
   var DEMO_CONDS = [["like-new", "Open box"], ["good", "Used"], ["good", "Used"], ["fair", "Used"], ["parts", "For parts or not working"]];
-  var DEMO_SELLERS = ["northbay_deals", "lakesidefinds", "ontario_resale", "nickelcitytech", "greatwhitegoods"];
+  var DEMO_SELLERS = ["nickelcity_deals", "lakesidefinds", "sudbury_resale", "nickelcitytech", "greatwhitegoods"];
 
   function demoArt(i) {
     var hues = [16, 95, 200, 280, 330];
