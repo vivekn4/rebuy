@@ -58,7 +58,7 @@ a { color: var(--clay); }
 img { max-width: 100%; display: block; }
 
 .skip {
-  position: absolute; left: -9var(--radius-round); top: 0; background: var(--clay);
+  position: absolute; left: -9999px; top: 0; background: var(--clay);
   color: #fff; padding: .6em 1em; border-radius: 0 0 10px 0; z-index: 200;
 }
 .skip:focus { left: 0; }
