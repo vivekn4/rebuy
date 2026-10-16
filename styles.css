@@ -694,6 +694,7 @@ body.chat-above-tray .chat-bubble { bottom: 5.4rem; }
 @media (max-width: 960px) {
   .chat-bubble { right: .9rem; bottom: 5.1rem; }
   body.chat-above-tray .chat-bubble { bottom: 9rem; }
+  body.chat-above-tray .chat-panel { bottom: calc(64px + 5.4rem + env(safe-area-inset-bottom, 0px)); }
   .chat-panel {
     right: .9rem; left: .9rem; width: auto;
     /* 4.6rem clears the fixed mobile tab bar (z 110) so the compose row
