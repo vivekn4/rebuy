@@ -1025,13 +1025,17 @@
     if (!hits.length) return;
     Sound.notify();
     hits.forEach(function (a) {
-      toast("Alert match: \"" + a.query + "\" — " + listing.title, "success");
+      toast("Your \"" + a.query + "\" alert just matched — " + listing.title, "success");
     });
     var dot = document.getElementById("alertsDot");
     if (dot) dot.hidden = false;
     if ("Notification" in window && Notification.permission === "granted") {
       try {
-        new Notification("Rebuy alert", { body: hits.length + " saved search" + (hits.length > 1 ? "es" : "") + " matched a new listing: " + listing.title });
+        new Notification("Rebuy alert", {
+          body: hits.length === 1
+            ? "Your \"" + hits[0].query + "\" alert found a match: " + listing.title
+            : hits.length + " of your saved searches matched a new listing: " + listing.title
+        });
       } catch (e) {}
     }
   }
