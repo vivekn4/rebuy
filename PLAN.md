@@ -53,7 +53,7 @@ This pass confirms that story is true on the live site, every screen, every labe
 - **Shipped-improvement verification (all confirmed live):**
   - Best Value hero: renders above results with `bestValueReason()` plain-language line and the same Demo/live tier label as its source (`demoPill`).
   - Sudbury-area eBay filter: toggle in filter bar; live eBay results filtered to Greater Sudbury (P3) postal area; graceful widen-out empty state ("No Sudbury-area eBay listings for this search" + "Show all Canadian results").
-  - `#ebay-setup` one-tap flow: saves the free eBay key on-device, switches results to live listings with real product thumbnails; hash is stripped from the address bar after save; keys in localStorage only.
+  - `#ebay-setup` one-tap flow: saves the free eBay key on-device; hash stripped from the address bar after save; keys in localStorage only. **2026-10-15 correction (Integrations):** eBay's API endpoints send no CORS headers, so the in-page token/search calls are browser-blocked — one-tap can NOT switch results to live eBay in a real browser. The site now says this plainly (search notice, Settings, FAQ) and stays on labeled demo results. Live Google web results remain viable once the free Google key is added. True live eBay needs a server-side exchange — watch-list §4.
 - **Secret audit:** only the public eBay App ID (`VivekNai-Rebuy-PRD-…`) is pre-filled in-repo — that's the publishable client ID, per the design. Cert ID never leaves the device; no secret material in commits.
 
 ### 3.3 QC team (QA Lead, QA Engineer, Compatibility Tester) — all green this pass
@@ -80,10 +80,11 @@ This pass confirms that story is true on the live site, every screen, every labe
 
 ---
 
-## 4. Likely bugs + mitigations (standing watch list — nothing open)
+## 4. Likely bugs + mitigations (standing watch list)
 
 | Bug | Mitigation / current state |
 |---|---|
+| **OPEN — eBay live path is CORS-blocked in-browser (2026-10-15, Integrations). eBay's token + Browse endpoints send no `Access-Control-Allow-Origin`, so in-page token exchange and search always fail in real browsers (curl verification is NOT proof of browser viability).** | Site is now honest everywhere: the eBay search notice names the browser block plainly, Settings + FAQ copy say eBay results stay demo for now, Google live results remain viable (GCS API has full CORS). Watch-list stays OPEN — true live eBay needs a server-side token exchange (free serverless function or user-approved proxy), which is a backend the user hasn't asked for. Never promise live eBay again until that ships. |
 | Pollinations slow or unreachable → spinner hangs | 12s timeout + race; Tier 1 always works offline; plain-text failure + chips. Verified. |
 | Radius change doesn't re-run search (stale pill) | Selector dispatches through the same search path; pill reads live value; journey asserts. Verified. |
 | Hardcoded "within 25 km" string somewhere | Grep-verified: badge/pill/hero-note/settings all call `getRadiusKm()`. Verified. |
