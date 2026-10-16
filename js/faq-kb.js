@@ -26,7 +26,7 @@
       id: "is-it-free",
       keys: ["free", "cost", "pay to use", "charge", "subscription", "sign up", "account"],
       title: "Is Rebuy free?",
-      body: "Yes — free, no account, no fees, no catch. The keys that turn on live eBay or web results are free too (no card), and they're stored only on your phone, never on our servers."
+      body: "Yes — free, no account, no fees, no catch. Live web results need a free Google key (no card, 100 searches a day), stored only on your phone, never on our servers."
     },
     {
       id: "commission",
@@ -42,8 +42,8 @@
     },
     {
       id: "live-ebay",
-      keys: ["ebay", "live", "setup", "one-tap", "key", "thumbnails", "photos", "real listings", "turn on"],
-      title: "Turn on live eBay results",
+      keys: ["ebay", "live", "setup", "one-tap", "key", "thumbnails", "photos", "real listings", "turn on", "demo", "results", "stays demo"],
+      title: "Why eBay results stay demo",
       body: "The one-tap link saves your free eBay key on this phone. Heads-up: eBay blocks in-page requests, so eBay results stay clearly-labeled demo samples for now. Add the free Google key in #/settings and those web results do go live. Your keys never leave your device."
     },
     {
@@ -106,15 +106,14 @@
     { label: "How does Rebuy work?", q: "How does Rebuy work?" },
     { label: "Is it free?", q: "Is Rebuy free?" },
     { label: "Safe meetup tips", q: "How do I buy safely?" },
-    { label: "Turn on live eBay", q: "How do I turn on live eBay results?" }
+    { label: "eBay demo mode", q: "Why do eBay results stay demo?" }
   ];
 
   var SYSTEM_PROMPT = [
     "You are the Rebuy help bot — a calm, plain-spoken assistant for Rebuy,",
     "a free used-goods comparison site in beta around Sudbury, Ontario.",
     "Answer ONLY Rebuy help topics: how Rebuy works, zero commission, safe",
-    "in-person meetups, live eBay setup (the one-tap #ebay-setup link in your chat, or Settings),",
-    "saved searches, selling on Rebuy, search radius, deal scores, offers, the",
+    "in-person meetups, eBay demo samples (eBay blocks in-page requests), the",
     "Spend tab, comparing listings, demo-vs-live labels, and delivery/shipping",
     "(Rebuy is in-person only — no delivery, no shipping).",
     "Hard rules:",
