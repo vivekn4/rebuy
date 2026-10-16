@@ -567,11 +567,13 @@
     wireCompareBoxes(mz);
   }
 
-  function modeNote(r, settingsHint) {
+  function modeNote(r, settingsHint, noLivePath) {
     if (r.mode === "live" && !r.quota)
       return '<div class="mode-note">Live results — real listings, updated just now.</div>';
     if (r.quota)
       return '<div class="mode-note demo">' + esc(r.notice || "External results paused — quota.") + "</div>";
+    if (noLivePath)
+      return '<div class="mode-note demo">Demo results — eBay listings can\u2019t go live from a browser (eBay blocks in-page requests). <a href="#/settings">Add the free Google key</a> for live web results.</div>';
     return '<div class="mode-note demo">Demo results — <a href="#/settings">' + esc(settingsHint) + "</a> for live listings.</div>";
   }
 
@@ -624,7 +626,7 @@
     if (showEbay) {
       html += '<div class="tier-label">' + (R.ebay.mode === "live" && !R.ebay.quota ? "eBay · live prices" : "eBay") +
         (R.sudbury && R.ebay.mode === "live" ? " · Sudbury area" : "") + "</div>";
-      html += modeNote(R.ebay, "add your free eBay key in Settings");
+      html += modeNote(R.ebay, null, true);
       if (R.ebay.notice && R.ebay.mode === "demo")
         html += '<div class="mode-note demo">' + esc(R.ebay.notice) + "</div>";
       if (R.ebayItems.length) {
@@ -658,7 +660,7 @@
       mz.innerHTML = '<div class="zone-title"><h2 class="serif">' +
         (f.src === "ebay" ? (isLiveEbay ? "eBay · live prices" : "eBay") : "Across the second-hand web") +
         '</h2><span class="count">' + items.length + "</span></div>" +
-        modeNote(r, "add your free key in Settings") + focusHero +
+        modeNote(r, "add your free key in Settings", f.src === "ebay") + focusHero +
         (items.length
           ? (f.src === "web" ? webGroupsHTML(items) : '<div class="cards">' + items.map(extCardHTML).join("") + "</div>")
           : (f.src === "ebay" && R.ebayWidened ? widenEmptyHTML()
