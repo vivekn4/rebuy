@@ -144,6 +144,15 @@ t("demoResults: link-outs are site-restricted searches for the query, not domain
 
 const E = require("../js/sources/ebay.js");
 
+t("ebay demo items always carry demo:true — alert pool must never ping a sample", () => {
+  return E.search("gaming laptop").then(r => {
+    assert.equal(r.mode, "demo");
+    assert.ok(r.items.length > 0);
+    assert.ok(r.items.every(x => x.demo === true),
+      "checkAlertsLive excludes the spotlight hero when demo:true");
+  });
+});
+
 // in-page localStorage stub so saveKeys/hasKeys work under node
 function stubLocalStorage() {
   const mem = {};
