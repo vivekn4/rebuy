@@ -44,7 +44,7 @@
       id: "live-ebay",
       keys: ["ebay", "live", "setup", "one-tap", "key", "thumbnails", "photos", "real listings", "turn on"],
       title: "Turn on live eBay results",
-      body: "Use the one-tap setup link from your chat — one tap saves your free eBay key on this phone and switches results to live listings with real product photos. Lost the link? Open #/settings and paste the App ID and Cert ID instead (the App ID is pre-filled). Your key never leaves your device."
+      body: "The one-tap link saves your free eBay key on this phone. Heads-up: eBay blocks in-page requests, so eBay results stay clearly-labeled demo samples for now. Add the free Google key in #/settings and those web results do go live. Your keys never leave your device."
     },
     {
       id: "alerts",
@@ -68,7 +68,7 @@
       id: "demo",
       keys: ["demo", "sample", "placeholder", "fake", "mock", "real listings", "not real", "samples"],
       title: "Demo vs live",
-      body: "Anything tagged \u201cDemo\u201d is a sample so you can see how the site works \u2014 not a real item for sale. Live eBay results are real listings with real photos, once you\u2019ve added your free eBay key in Settings. We never dress samples up as real deals."
+      body: "Anything tagged \u201cDemo\u201d is a sample so you can see how the site works \u2014 not a real item for sale. eBay results stay demo because eBay blocks in-page requests; add the free Google key in #/settings and those web results go live. We never dress samples up as real deals."
     },
     {
       id: "shipping",
