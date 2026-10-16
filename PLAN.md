@@ -2,13 +2,13 @@
 
 *Producer: full team pass over the live site — https://vivekn4.github.io/rebuy/ (repo `vivekn4/rebuy`, HEAD `26afd5e`, VISION.md on main).*
 *North star: VISION.md (north-star committed 2026-10-15). This plan replaces the 2026-10-15 build plan (preserved in git history).*
-*Outcome of this pass: every shipped requirement verified in code + live site, full test suite green (76/76). One below-the-bar defect was found and fixed by the Integrations Engineer: the live eBay path is CORS-blocked in real browsers, so all copy claiming live eBay results now names the browser block plainly (see §4, still open). PLAN.md is the only documentation change; the fix itself (copy + notice classification + 2 tests) shipped in this pass.*
+*Outcome of this pass (Producer final sign-off, 2026-10-15): every shipped requirement re-verified in code. Two defects found and fixed: (1) the REQUIRED alert-matching fix — saved-search alerts now match against the combined live pool (native + live-mode eBay, never demo) after results resolve (`checkAlertsLive` in `js/ui.js`); (2) journey 29's expectation had drifted from the honest eBay copy — fixed, and a new journey (35b) covers the alert-ping behavior (fires once, skips current-search queries). Full QC green: 76/76 unit, 39/39 journeys, zero-console-errors gate. PLAN.md copy corrected for eBay honesty (§1, §2, §3). Pushes: `js/ui.js`, `test-harness/journeys.js`, `PLAN.md` (one file per connector call, each verified).*
 
 ---
 
 ## 1. User story
 
-Maya in Sudbury wants a used bike for her kid before winter. She opens Rebuy on her phone, taps the search bar, types "bike". Within seconds she sees real eBay listings with actual product photos, Rebuy listings near her, a single "Best value" pick at the top with a plain reason ("$120 below the going rate"), and a location pill that says "Within 25 km of Sudbury, ON". She taps a listing, messages the seller, and sees a calm note: *Rebuy never takes a cut — you pay the seller in person.*
+Maya in Sudbury wants a used bike for her kid before winter. She opens Rebuy on her phone, taps the search bar, types "bike". Within seconds she sees real Rebuy listings near her, clearly-labeled eBay demo samples (eBay blocks in-page requests, so eBay can't go live from a browser — the site says so plainly), a single "Best value" pick at the top with a plain reason ("$120 below the going rate") and the same Demo/live label as its source, and a location pill that says "Within 25 km of Sudbury, ON". She taps a listing, messages the seller, and sees a calm note: *Rebuy never takes a cut — you pay the seller in person.*
 
 She has a question — "Is it really free?" — so she taps the small chat bubble in the corner. The answer appears instantly, plain and short. She taps "Save this search as an alert" so she gets pinged when a cheaper bike shows up. She comes back because Rebuy found her something good and tells her when something better appears.
 
@@ -21,7 +21,7 @@ This pass confirms that story is true on the live site, every screen, every labe
 **IN for this pass:**
 1. Verify the FAQ chatbot widget end to end: local Tier-1 knowledge base answers instantly (offline-capable), free Pollinations text API fallback with a Rebuy-scoped system prompt, no keys in the repo, no paid anything.
 2. Verify the location model: 25 km default radius around the user's location/Sudbury, radius selector (10 / 25 / 50 / 100 km), honest location pill reading the live value. Sudbury-only beta — never pretend to cover other cities.
-3. Verify the three shipped improvements on the live site: real eBay thumbnails after the one-tap `#ebay-setup` flow, the Best Value spotlight hero with a plain-language reason, the Sudbury-area eBay filter toggle with its graceful widen-out empty state.
+3. Verify the three shipped improvements on the live site: the one-tap `#ebay-setup` flow (saves the free eBay key on-device; results stay clearly-labeled demo samples because eBay blocks in-page requests — never presented as live), the Best Value spotlight hero with a plain-language reason + Demo/live tier label, the Sudbury-area eBay filter toggle with its graceful widen-out empty state.
 4. Confirm `frag-test.html` is gone from the repo and not reachable live.
 5. Confirm no key material anywhere in the repo or commits; confirm the eBay App ID pre-fill is the public client ID only (Cert ID stays on the user's device).
 6. Full test suite green; journeys cover the new surfaces.
@@ -44,7 +44,7 @@ This pass confirms that story is true on the live site, every screen, every labe
 
 - **Chatbot widget:** small terracotta bottom-right bubble (Lucide `message-circle`, never emoji, ≥44px tap target, `aria-expanded`/`aria-controls` wired). Expands to a calm cream panel with header ("Rebuy help" + "Quick answers — even offline"), message log, four quick-answer chips, text input + send, footer "Rebuy never takes a cut — you pay the seller in person." + the free-AI privacy note. Bubble lifts clear of the Compare tray (`.chat-above-tray` + MutationObserver). Escape closes; focus returns to the bubble.
 - **Radius selector + location pill:** selector in the filter bar (10 / 25 / 50 / 100, default 25, device-persisted via `rebuy:radius`) AND in Settings; changing it re-runs the current search and toasts the new radius. Pill reads the live value everywhere — no hardcoded "25 km" strings. Off-Sudbury GPS fallback keeps the honest label ("Sudbury, ON (default)" source="fallback").
-- **Retention UX (with retention team):** "Save this search" alert control on results pages; chatbot quick chips double as discovery ("Turn on live eBay" → Settings `#ebay-setup`).
+- **Retention UX (with retention team):** "Save this search" alert control on results pages (now matches against the combined live pool after each search — `checkAlertsLive`, demo-mode items never count); chatbot quick chips double as discovery ("eBay demo mode" chip → the honest "Why eBay results stay demo" FAQ).
 
 ### 3.2 Dev team (Tech Lead, Frontend Dev, Integrations Engineer) — all verified in code + live
 
@@ -52,7 +52,7 @@ This pass confirms that story is true on the live site, every screen, every labe
 - **Location (`js/geo.js` + `js/ui.js`):** `getRadiusKm`/`setRadiusKm` persist one of `RADII`, default 25; invalid values rejected back to 25 (journey asserts). Geolocation: 8s timeout → Sudbury fallback with honest notice; manual "Reset to Sudbury" stays.
 - **Shipped-improvement verification (all confirmed live):**
   - Best Value hero: renders above results with `bestValueReason()` plain-language line and the same Demo/live tier label as its source (`demoPill`).
-  - Sudbury-area eBay filter: toggle in filter bar; live eBay results filtered to Greater Sudbury (P3) postal area; graceful widen-out empty state ("No Sudbury-area eBay listings for this search" + "Show all Canadian results").
+  - Sudbury-area eBay filter: toggle in filter bar; eBay results (currently clearly-labeled demo samples — the browser block is named plainly) filtered to Greater Sudbury (P3) postal area; graceful widen-out empty state ("No Sudbury-area eBay listings for this search" + "Show all Canadian results").
   - `#ebay-setup` one-tap flow: saves the free eBay key on-device; hash stripped from the address bar after save; keys in localStorage only. **2026-10-15 correction (Integrations):** eBay's API endpoints send no CORS headers, so the in-page token/search calls are browser-blocked — one-tap can NOT switch results to live eBay in a real browser. The site now says this plainly (search notice, Settings, FAQ) and stays on labeled demo results. Live Google web results remain viable once the free Google key is added. True live eBay needs a server-side exchange — watch-list §4.
 - **Secret audit:** only the public eBay App ID (`VivekNai-Rebuy-PRD-…`) is pre-filled in-repo — that's the publishable client ID, per the design. Cert ID never leaves the device; no secret material in commits.
 
@@ -76,7 +76,7 @@ This pass confirms that story is true on the live site, every screen, every labe
 
 ### 3.6 Integrator + Release Manager
 
-- No integration work needed this pass (no code changes). Release state: HEAD `26afd5e` (VISION.md) on main; live site serves the current build; no pending pushes.
+- This pass shipped: the alert-live-matching fix (`js/ui.js`, committed `8cb9d8a`), journey fixes + new alert-ping journey (`test-harness/journeys.js`), and PLAN.md honesty corrections. Pushed to main via the GitHub connector (one file per call, each verified with `get_file_contents`); live site re-verified after the Pages deploy.
 
 ---
 
@@ -105,8 +105,8 @@ This pass confirms that story is true on the live site, every screen, every labe
 | 1 — Plan | This PLAN.md; vision bar confirmed (VISION.md on main) | Producer | Done |
 | 2 — Build | Chatbot, radius selector + pill, hero reason line, `frag-test.html` deletion | UI/UX, Dev, Retention | Done (prior pass) |
 | 3 — Integrate | Merge, token/palette check | Integrator | Done (prior pass) |
-| 4 — QC | 76/76 unit green, journeys green, live pill verified, secrets audit clean | QC team | Done |
-| 5 — Ship | No code changes this pass; live site already serves current build | Release Manager | Done |
+| 4 — QC | 76/76 unit green, 39/39 journeys green, zero-console-errors gate green, live pill verified, secrets audit clean | QC team | Done |
+| 5 — Ship | `js/ui.js` + `test-harness/journeys.js` + `PLAN.md` pushed via connector (one file per call); live site verified after deploy | Release Manager | Done |
 | 6 — Greenlight | Every team votes against VISION.md; unanimous or it doesn't ship | All | Ready — nothing ships until user sign-off |
 
 **Standing rules:** one-file pushes via the GitHub connector (multi-file payloads hang); human-made copy everywhere (read it aloud — if it sounds like a model, rewrite); nothing is shown to the user until every crew member gives their green light.
